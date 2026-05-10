@@ -90,6 +90,8 @@
 - WSL과 Windows 환경의 Git 설치 상태를 확인하고, Windows Git for Windows를 설치했다.
 - GitHub CLI 인증을 완료하고 `kkssii0210` 계정과 연동했다.
 - 첫 Git 저장소를 초기화하고 GitHub private repo에 push했다.
+- 프로젝트 로컬 Codex skill로 `devbrother2024/skills`의 `deep-interview`를 `.agents/skills/deep-interview`에 설치했다.
+- `deep-interview`는 모호한 기능 요청을 바로 구현하지 않고 목표, 범위, 제약, 완료 기준을 한 번에 하나씩 질문해 정리하는 용도로 사용한다.
 
 ### GitHub
 
