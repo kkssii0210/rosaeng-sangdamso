@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import ArmoryView from "../components/ArmoryView.jsx";
+import WelcomeScene from "../components/WelcomeScene.jsx";
 
 const starterMessages = [
   {
@@ -27,6 +28,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [armory, setArmory] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
 
   async function loadCharacter(characterName) {
     setIsLoading(true);
@@ -63,6 +65,10 @@ export default function Home() {
     }
 
     loadCharacter(characterName);
+  }
+
+  if (!hasEntered && !armory) {
+    return <WelcomeScene onComplete={() => setHasEntered(true)} />;
   }
 
   return (

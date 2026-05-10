@@ -93,6 +93,16 @@
 - 프로젝트 로컬 Codex skill로 `devbrother2024/skills`의 `deep-interview`를 `.agents/skills/deep-interview`에 설치했다.
 - `deep-interview`는 모호한 기능 요청을 바로 구현하지 않고 목표, 범위, 제약, 완료 기준을 한 번에 하나씩 질문해 정리하는 용도로 사용한다.
 
+### 웰컴 페이지와 슥구 에셋
+
+- 첫 방문 시 바로 상담 화면으로 들어가지 않고, 밤 숲길 끝의 오두막으로 접근하는 짧은 웰컴 애니메이션을 추가했다.
+- 풀벌레 소리, 부엉이 소리, 문이 열리는 효과음을 Web Audio 기반으로 구성했다.
+- `imagegen`으로 밤 숲의 오두막 배경과 오두막 내부 배경을 생성해 `public/welcome-forest-cabin.webp`, `public/welcome-cabin-interior.webp`로 저장했다.
+- 기존 슥구를 참고해 책상 앞에 앉아있는 상담원 슥구를 생성하고, 피부톤과 눈매를 새 기준에 맞게 다시 보정했다.
+- 웰컴 페이지에서 사용하는 최종 앉은 슥구 에셋은 `public/sggu-seated.png`로 저장했다.
+- 앞으로의 후보 캐릭터 방향을 보기 위해 서서 설명하는 슥구 에셋을 `public/sggu-standing.png`에 추가했다. 이 파일은 아직 화면에 연결하지 않은 검토용 에셋이다.
+- 생성 원본 파일은 추적하지 않도록 `public/generated/`를 `.gitignore`에 추가했다.
+
 ### GitHub
 
 - GitHub repo: `kkssii0210/rosaeng-sangdamso`
