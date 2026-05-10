@@ -1,0 +1,23 @@
+{
+  "name": "lostark-sgugu-consultant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node node_modules/next/dist/bin/next dev",
+    "dev:restart": "bash scripts/restart-dev.sh",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start",
+    "lint": "node node_modules/eslint/bin/eslint.js .",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6"
+  }
+}
