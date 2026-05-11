@@ -80,6 +80,10 @@ export default function Home() {
             <span className="bubble-puff puff-two" aria-hidden="true" />
             <span className="bubble-puff puff-three" aria-hidden="true" />
             <span className="bubble-puff puff-four" aria-hidden="true" />
+            <div className="bubble-kicker" aria-hidden="true">
+              <span className="bubble-kicker-dot" />
+              슥구 상담소
+            </div>
             <div className="message-log" aria-live="polite">
               {messages.map((message, index) => (
                 <div className={`message ${message.role}`} key={`${message.role}-${index}-${message.text}`}>

@@ -168,10 +168,10 @@ export default function WelcomeScene({ onComplete }) {
       <div className="welcome-door-bloom" aria-hidden="true" />
       <div className="welcome-backdrop welcome-interior" aria-hidden="true">
         <Image
-          src="/sggu-seated.png"
+          src="/sggu-welcome-canonical.png"
           alt=""
-          width={720}
-          height={1080}
+          width={1024}
+          height={1536}
           className="seated-sggu-asset"
           priority
         />
