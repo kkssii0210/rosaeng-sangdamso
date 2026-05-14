@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { EXCLUDED_EQUIPMENT_TYPES, normalizeEquipmentItem } from "../lib/lostark/equipment.js";
+import { EXCLUDED_EQUIPMENT_TYPES, extractParadiseOrbInfo, normalizeEquipmentItem } from "../lib/lostark/equipment.js";
 import {
   abilityStoneSample,
   armorSample,
   braceletSample,
   excludedSamples,
   necklaceSample,
+  paradiseOrbSample,
+  supportParadiseOrbSample,
   weaponSample
 } from "./fixtures/equipmentSamples.js";
 
@@ -52,6 +54,28 @@ test("marks compass, charm, and orb equipment types as excluded", () => {
     .map((item) => item.Type);
 
   assert.deepEqual(visibleTypes, ["무기"]);
+});
+
+test("extracts max paradise power from excluded orb equipment", () => {
+  const paradiseOrb = extractParadiseOrbInfo([weaponSample, paradiseOrbSample]);
+
+  assert.equal(paradiseOrb.Type, "보주");
+  assert.equal(paradiseOrb.Name, "눈부신 비전의 보주");
+  assert.equal(paradiseOrb.EffectName, "맥스웰 맥시마");
+  assert.equal(paradiseOrb.EffectRole, "attack");
+  assert.deepEqual(paradiseOrb.MaxParadisePower, {
+    Value: 48275714,
+    Text: "시즌2 달성 최대 낙원력 : 48,275,714"
+  });
+  assert.equal("Tooltip" in paradiseOrb, false);
+});
+
+test("classifies support paradise orb from special effect text", () => {
+  const paradiseOrb = extractParadiseOrbInfo([supportParadiseOrbSample]);
+
+  assert.equal(paradiseOrb.EffectName, "투영");
+  assert.equal(paradiseOrb.EffectRole, "support");
+  assert.equal(paradiseOrb.MaxParadisePower.Value, 1000000);
 });
 
 test("extracts accessory detail sections", () => {

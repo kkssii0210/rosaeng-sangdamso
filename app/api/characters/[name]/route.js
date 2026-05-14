@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { normalizeAvatars } from "../../../../lib/lostark/avatars.js";
 import { normalizeEngravings } from "../../../../lib/lostark/engravings.js";
-import { EXCLUDED_EQUIPMENT_TYPES, normalizeEquipmentItem } from "../../../../lib/lostark/equipment.js";
+import { EXCLUDED_EQUIPMENT_TYPES, extractParadiseOrbInfo, normalizeEquipmentItem } from "../../../../lib/lostark/equipment.js";
 import { normalizeGems } from "../../../../lib/lostark/gems.js";
+import { getMarketSnapshot } from "../../../../lib/lostark/marketApi.js";
 import { buildClassIdentityEffects } from "../../../../lib/spec/classIdentityEffects.js";
+import { buildCombatPowerAnalysis } from "../../../../lib/spec/combatPowerModel.js";
 import { buildCriticalStats } from "../../../../lib/spec/criticalStats.js";
+import { buildUpgradeEfficiency } from "../../../../lib/spec/upgradeEfficiency.js";
 
 export const runtime = "nodejs";
 
@@ -81,7 +84,11 @@ export async function GET(_request, context) {
 
   try {
     const encodedName = encodeURIComponent(characterName);
-    const [profile, equipment, avatars, arkPassive, arkGrid, cards, skills, engravings, gems] = await Promise.all([
+    const marketSnapshotPromise = getMarketSnapshot({ authorization }).catch((error) => {
+      console.error(error);
+      return null;
+    });
+    const [profile, equipment, avatars, arkPassive, arkGrid, cards, skills, engravings, gems, marketSnapshot] = await Promise.all([
       fetchLostark(`/armories/characters/${encodedName}/profiles`, authorization),
       fetchLostark(`/armories/characters/${encodedName}/equipment`, authorization),
       fetchLostark(`/armories/characters/${encodedName}/avatars`, authorization),
@@ -90,7 +97,8 @@ export async function GET(_request, context) {
       fetchLostark(`/armories/characters/${encodedName}/cards`, authorization),
       fetchLostark(`/armories/characters/${encodedName}/combat-skills`, authorization),
       fetchLostark(`/armories/characters/${encodedName}/engravings`, authorization),
-      fetchLostark(`/armories/characters/${encodedName}/gems`, authorization)
+      fetchLostark(`/armories/characters/${encodedName}/gems`, authorization),
+      marketSnapshotPromise
     ]);
 
     if (!profile) {
@@ -103,6 +111,7 @@ export async function GET(_request, context) {
       );
     }
 
+    const paradiseOrb = extractParadiseOrbInfo(equipment);
     const normalizedEquipment = Array.isArray(equipment)
       ? equipment.filter((item) => !EXCLUDED_EQUIPMENT_TYPES.has(item?.Type)).map(normalizeEquipmentItem)
       : [];
@@ -124,10 +133,28 @@ export async function GET(_request, context) {
       cards: cards || {},
       classIdentityEffects
     });
+    const upgradeEfficiency = buildUpgradeEfficiency({
+      profile,
+      equipment: normalizedEquipment,
+      avatars: normalizedAvatars,
+      gems: normalizedGems,
+      criticalStats,
+      marketSnapshot
+    });
+    const combatPowerAnalysis = buildCombatPowerAnalysis({
+      profile,
+      equipment: normalizedEquipment,
+      paradiseOrb,
+      arkPassive: arkPassive || {},
+      arkGrid: arkGrid || {},
+      engravings: normalizedEngravings,
+      gems: normalizedGems
+    });
 
     return NextResponse.json({
       profile,
       equipment: normalizedEquipment,
+      paradiseOrb,
       avatars: normalizedAvatars,
       arkPassive: arkPassive || {},
       arkGrid: arkGrid || {},
@@ -136,7 +163,9 @@ export async function GET(_request, context) {
       engravings: normalizedEngravings,
       gems: normalizedGems,
       classIdentityEffects,
-      criticalStats
+      criticalStats,
+      combatPowerAnalysis,
+      upgradeEfficiency
     });
   } catch (error) {
     console.error(error);

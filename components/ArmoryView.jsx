@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import ArkPassiveSkillsPage from "./ArkPassiveSkillsPage.jsx";
 import EquipmentPage from "./EquipmentPage.jsx";
+import UpgradeEfficiencyPage from "./UpgradeEfficiencyPage.jsx";
 import { formatNumber, listOf, valueOf } from "./armoryUtils.js";
 
-const ARMORY_PAGE_IDS = new Set(["equipment", "build"]);
+const ARMORY_PAGE_IDS = new Set(["equipment", "build", "upgrade"]);
 
 function getPageFromHash() {
   if (typeof window === "undefined") {
@@ -48,7 +49,8 @@ export default function ArmoryView({ armory }) {
 
   const pages = [
     { id: "equipment", label: "장비", meta: `장비 ${equipment.length} · 보석 ${gems.length} · 아바타 ${avatars.length}` },
-    { id: "build", label: "아크패시브/스킬", meta: `스킬 ${visibleSkills.length}개` }
+    { id: "build", label: "아크패시브/스킬", meta: `스킬 ${visibleSkills.length}개` },
+    { id: "upgrade", label: "스펙업 효율", meta: `후보 ${armory?.upgradeEfficiency?.Candidates?.length || 0}개` }
   ];
 
   useEffect(() => {
@@ -115,9 +117,21 @@ export default function ArmoryView({ armory }) {
       </nav>
 
       {activePage === "equipment" ? (
-        <EquipmentPage equipment={equipment} engravings={engravings} gems={gems} profile={profile} avatars={avatars} criticalStats={criticalStats} />
-      ) : (
+        <EquipmentPage
+          equipment={equipment}
+          engravings={engravings}
+          gems={gems}
+          profile={profile}
+          avatars={avatars}
+          criticalStats={criticalStats}
+        />
+      ) : activePage === "build" ? (
         <ArkPassiveSkillsPage arkPassive={armory?.arkPassive || {}} skills={visibleSkills} />
+      ) : (
+        <UpgradeEfficiencyPage
+          combatPowerAnalysis={armory?.combatPowerAnalysis || null}
+          upgradeEfficiency={armory?.upgradeEfficiency || null}
+        />
       )}
     </section>
   );

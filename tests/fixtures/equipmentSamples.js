@@ -126,8 +126,49 @@ export const braceletSample = {
   })
 };
 
+export const paradiseOrbSample = {
+  Type: "보주",
+  Name: "눈부신 비전의 보주",
+  Icon: "https://cdn-lostark.game.onstove.com/sample-orb.png",
+  Grade: "유물",
+  Tooltip: createTooltip({
+    qualityValue: -1,
+    sections: [
+      {
+        title: "특수 효과",
+        lines: [
+          "[맥스웰 맥시마]",
+          "보스 등급 이상 몬스터에게 304,654,272의 고정 피해를 줍니다.",
+          "시즌2에 달성한 최대 낙원력에 따라 특수 효과 수치가 변동됩니다.",
+          "시즌2 달성 최대 낙원력 : 48,275,714"
+        ]
+      }
+    ]
+  })
+};
+
+export const supportParadiseOrbSample = {
+  Type: "보주",
+  Name: "투영의 보주",
+  Icon: "https://cdn-lostark.game.onstove.com/sample-support-orb.png",
+  Grade: "유물",
+  Tooltip: createTooltip({
+    qualityValue: -1,
+    sections: [
+      {
+        title: "특수 효과",
+        lines: [
+          "[투영]",
+          "주변 파티원의 생명력을 회복합니다.",
+          "시즌2 달성 최대 낙원력 : 1,000,000"
+        ]
+      }
+    ]
+  })
+};
+
 export const excludedSamples = [
   { Type: "나침반", Name: "프로키온의 나침반", Tooltip: createTooltip({ qualityValue: -1 }) },
   { Type: "부적", Name: "세계수의 부적", Tooltip: createTooltip({ qualityValue: -1 }) },
-  { Type: "보주", Name: "오르페우스의 별", Tooltip: createTooltip({ qualityValue: -1 }) }
+  paradiseOrbSample
 ];

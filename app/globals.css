@@ -1414,7 +1414,7 @@ button:disabled {
 .armory-nav {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 5px;
   border: 1px solid #d8e0ea;
@@ -1472,6 +1472,11 @@ button:disabled {
 }
 
 .equipment-page-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.upgrade-page-grid {
   display: grid;
   gap: 12px;
 }
@@ -2299,6 +2304,162 @@ button:disabled {
   background: #f3f4f6;
 }
 
+.upgrade-candidate-list {
+  display: grid;
+  gap: 8px;
+}
+
+.combat-power-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.combat-power-metrics div,
+.combat-power-factor {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fbfdff;
+}
+
+.combat-power-metrics span,
+.combat-power-factor span {
+  display: block;
+  color: var(--color-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.combat-power-metrics strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-primary);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.combat-power-base {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.combat-power-base span,
+.combat-power-notes li {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: var(--radius-sm);
+  color: var(--color-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  background: #f3f4f6;
+}
+
+.combat-power-factor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.combat-power-factor strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-tertiary);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.combat-power-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 10px 0 0;
+  list-style: none;
+}
+
+.upgrade-candidate {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(116px, auto);
+  gap: 8px 12px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fbfdff;
+}
+
+.upgrade-candidate-main,
+.upgrade-candidate-score {
+  min-width: 0;
+}
+
+.upgrade-candidate-main strong {
+  display: block;
+  color: var(--color-primary);
+  font-size: 13px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.upgrade-candidate-main span {
+  display: block;
+  margin-top: 4px;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.upgrade-candidate-score {
+  text-align: right;
+}
+
+.upgrade-candidate-score strong {
+  display: block;
+  color: var(--color-tertiary);
+  font-size: 20px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.upgrade-candidate-score span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.upgrade-candidate-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.upgrade-candidate-meta span {
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--color-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  background: #f3f4f6;
+}
+
 .avatar-bonus-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -3078,6 +3239,18 @@ button:disabled {
   .equipment-list,
   .passive-points {
     grid-template-columns: 1fr;
+  }
+
+  .upgrade-candidate {
+    grid-template-columns: 1fr;
+  }
+
+  .upgrade-candidate-score {
+    text-align: left;
+  }
+
+  .combat-power-metrics {
+    grid-template-columns: 1fr 1fr;
   }
 
   .info-panel,
