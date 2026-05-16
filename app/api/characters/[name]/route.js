@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeAvatars } from "../../../../lib/lostark/avatars.js";
+import { normalizeCards } from "../../../../lib/lostark/cards.js";
 import { normalizeEngravings } from "../../../../lib/lostark/engravings.js";
 import { EXCLUDED_EQUIPMENT_TYPES, extractParadiseOrbInfo, normalizeEquipmentItem } from "../../../../lib/lostark/equipment.js";
 import { normalizeGems } from "../../../../lib/lostark/gems.js";
@@ -116,6 +117,7 @@ export async function GET(_request, context) {
       ? equipment.filter((item) => !EXCLUDED_EQUIPMENT_TYPES.has(item?.Type)).map(normalizeEquipmentItem)
       : [];
     const normalizedAvatars = normalizeAvatars(avatars);
+    const normalizedCards = normalizeCards(cards);
     const normalizedEngravings = normalizeEngravings(engravings);
     const normalizedGems = normalizeGems(gems);
     const normalizedSkills = Array.isArray(skills) ? skills : [];
@@ -130,7 +132,7 @@ export async function GET(_request, context) {
       skills: normalizedSkills,
       arkPassive: arkPassive || {},
       arkGrid: arkGrid || {},
-      cards: cards || {},
+      cards: normalizedCards,
       classIdentityEffects
     });
     const upgradeEfficiency = buildUpgradeEfficiency({
@@ -147,6 +149,7 @@ export async function GET(_request, context) {
       paradiseOrb,
       arkPassive: arkPassive || {},
       arkGrid: arkGrid || {},
+      cards: normalizedCards,
       engravings: normalizedEngravings,
       gems: normalizedGems
     });
@@ -158,7 +161,7 @@ export async function GET(_request, context) {
       avatars: normalizedAvatars,
       arkPassive: arkPassive || {},
       arkGrid: arkGrid || {},
-      cards: cards || {},
+      cards: normalizedCards,
       skills: normalizedSkills,
       engravings: normalizedEngravings,
       gems: normalizedGems,

@@ -88,15 +88,16 @@ Known combat-power factors from the source, summarized for implementation:
   - Lv.65-69: `+23.97%`
   - Lv.70: `+29.45%`
 - Weapon quality contributes through its displayed additional-damage value. Quality 100 is modeled as roughly `+30.00%`; some qualities can differ by `0.01%` from tooltip display.
-- Ark passive point factors are additive inside one shared ark-passive point bucket, then that bucket multiplies once with other categories:
-  - evolution points used in 2T-4T: `+0.5%` each. The first-row stat points are excluded from this combat-power factor, so an 80-point 2T-4T setup contributes `+40%`.
-  - enlightenment points used: `+0.7%` each, capped at 100 points for combat power (`+70%` max)
+- TODO: Esther weapon holders can diverge from the current weapon/base-attack normalization. Do not hardcode from one character; compare several Esther weapon characters first, then add a separate equipment-path adjustment if the gap is consistent.
+- Ark passive point factors are separate multiplicative buckets. Evolution, enlightenment, and leap each become their own factor and multiply with each other:
+  - evolution points used in 2T-4T: `+0.75%` each after the elixir/transcendence removal compensation. The first-row stat points are excluded from this combat-power factor, so a 100-point 2T-4T setup contributes `+75%`.
+  - enlightenment points use a flat capped model from the stripped Boomber retest: `min(points, 100) * 0.7%`. Both 100P and 101P contribute `+70%`. Parsed selected-node, side-node, and 4T data is retained only as diagnostics.
   - leap points used: `+0.2%` each
 - Karma:
   - evolution rank adds `+0.6%` combat power per rank; max-health levels do not affect dealer combat power.
   - enlightenment levels add weapon-power percent, so their value flows through `pureBaseAttackPower`; combine it additively with accessory `무기 공격력 +%` before applying it to raw weapon power. Enlightenment rank points also add the normal enlightenment-point factor when usable.
   - leap level adds a very small hyper-awakening-damage-derived factor, observed as `+0.02%` per level; leap rank gives 2 leap points, so it also adds the normal leap-point factor when usable.
-- Dealer engraving combat-power factors use the measured Inven 106460 table instead of tooltip damage contribution. Examples for relic engravings: `원한 +21%`, `아드레날린 +19.4%`, `돌격대장 +19.2%`, `질량 증가 +19%`, `기습의 대가/결투의 대가 +18.1%`, `저주받은 인형/예리한 둔기/타격의 대가/안정된 상태/바리케이드/달인의 저력 +17%`, `속전속결/슈퍼 차지 +16.8%`. Known legendary overrides from the same source are applied for `마나 효율 증가`, `에테르 포식자`, `저주받은 인형`, `예리한 둔기`, `속전속결`, and `슈퍼 차지`; other legendary engravings are not guessed from the relic table. Ability-stone-specific engraving combat-power increments are acknowledged but not separately added because the source does not provide a numeric table.
+- Dealer engraving combat-power factors use the measured table keyed by engraving name, relic-book progress, and ability-stone level. API `Level 0/1/2/3/4` maps to relic-book progress `0/5/10/15/20`, and `AbilityStoneLevel 0/1/2/3/4` selects the stone bonus column. Examples at relic-book 20 and stone level 0 are `원한 +21%`, `아드레날린 +19.4%`, `돌격대장 +19.2%`, `질량 증가 +19%`, `기습의 대가/결투의 대가 +18.1%`, `저주받은 인형/타격의 대가/안정된 상태/바리케이드/달인의 저력 +17%`, `속전속결/슈퍼 차지 +16.8%`, `예리한 둔기 +17.36%`, and `에테르 포식자 +16.2%` at 30 stacks. Legendary or no-relic-book engravings use the relic-book 0 row. Ability-stone basic attack percent, such as `기본 공격력 +1.50%`, is separate from the engraving table and is added to the `baseAttack` bucket.
 - Elixir and transcendence combat-power factors are removed from the current model. Do not add the old theoretical elixir maximum (`회심 12%`, `치피/보피 2.4%`, `투구/장갑 1.44%`, six `공5` lines for `3.24%`, total `24.96%`) as an independent factor.
 - Accessory honing effects:
   - shared flat attack-power lines use an endgame base-attack reference rather than `pureBaseAttackPower`.
@@ -109,15 +110,19 @@ Known combat-power factors from the source, summarized for implementation:
 combatStatFactor = 1 + ((crit + specialization + swiftness) * 0.03) / 100
 ```
 
-- Bracelet modeling mixes fixed option factors and value-through-base-attack factors. Bracelet combat stats use the combat-stat factor; bracelet weapon-power lines flow through `pureBaseAttackPower`; special option factors are independent.
+- Bracelet modeling applies only special-option combat-power factors independently in the bracelet bucket. Bracelet combat stats use the combat-stat factor, bracelet leap points use the ark-passive point factor, and base weapon-power lines flow through the selected base-attack model instead of being duplicated in the bracelet bucket.
+  - Paired special options use the measured high/mid/low tables: crit-rate plus critical outgoing damage, crit-damage plus critical outgoing damage, additional damage plus demon damage, cooldown penalty plus outgoing damage, and outgoing damage plus stagger-target outgoing damage.
+  - Standalone special options use bracelet-specific high/mid/low coefficients for outgoing damage, additional damage, back/head/non-directional skill outgoing damage, critical rate, and critical damage. These differ from accessory honing coefficients.
+  - Buff-style weapon-power bracelet options add only their buff portion in the bracelet bucket. Base flat weapon power is not duplicated there.
 - Gems:
-  - Normal skill gems have two combat-power components: the tooltip `기본 공격력 %` line is additive inside the base-attack bucket, and each 4T gem also has an independent pure combat-power multiplier.
+  - Normal skill gems expose tooltip `기본 공격력 %` and each 4T gem also has an independent pure combat-power multiplier. `기본 공격력 %` multiplies combat power after the pure base attack is selected.
   - 4T pure gem combat-power factors by level: Lv.1 `+1.28%`, Lv.2 `+1.92%`, Lv.3 `+2.56%`, Lv.4 `+3.20%`, Lv.5 `+3.84%`, Lv.6 `+4.48%`, Lv.7 `+5.12%`, Lv.8 `+5.76%`, Lv.9 `+6.40%`, Lv.10 `+7.04%`.
-  - Ark-grid gems are read from `/arkgrid.Effects` when available. Dealer diagnostic factors currently include `공격력`, `추가 피해`, `보스 피해`, and `무기 공격력`.
-  - Ark-grid gem `공격력` and `보스 피해` are applied as direct displayed combat-power factors.
-  - Ark-grid gem `추가 피해` shares the existing additional-damage context, so it uses the same endgame weapon-quality reference as necklace additional damage: `additionalDamagePercent / 130 * 100`.
+  - Ark-grid gems are read from `/arkgrid.Effects` when available. Dealer combat-power factors currently include `공격력`, `추가 피해`, `보스 피해`, and `무기 공격력`.
+  - Ark-grid gem `공격력` is added to the same displayed attack-power bucket as accessory `공격력 +%` lines.
+  - Ark-grid gem `추가 피해` is added to the raw additional-damage bucket with weapon quality, necklace additional damage, and the current pet-ranch `+1.00%` assumption. For example, Boomber's `29.61 + 1.60 + 1.77 + 1.00 = 33.98%`.
+  - Ark-grid gem `보스 피해` is not merged by moving chaos `달 : 불타는 일격` out of the core table, because lower point values do not map cleanly to boss damage. Keep `불타는 일격` on the normal chaos-core combat-power table, then apply the gem as a marginal factor against the Boomber-observed `불타는 일격` boss-damage context `1.82%`: `(1 + (1.82 + gemBossDamage) / 100) / (1 + 1.82 / 100) - 1`.
   - Ark-grid gem `무기 공격력` is converted through the base-attack approximation `sqrt(1 + weaponPowerPercent / 100) - 1`.
-  - These Ark-grid gem values are exposed as diagnostics but are not multiplied into the current displayed-combat-power estimate. Testing against current Open API and Lopec pages showed independent gem multiplication double-counts or overcounts the in-game/Lopec combat-power baseline.
+  - These Ark-grid gem values are multiplied into the current displayed-combat-power estimate as independent factors.
   - Support-oriented Ark-grid gem effects such as `낙인력`, `아군 피해 강화`, and `아군 공격 강화` are not applied to dealer combat power.
 
 - Paradise orb:
@@ -171,7 +176,7 @@ Project implementation notes:
 - Combat-power verification now keeps two base-attack candidates separate:
   - `ProfileBaseAttackBeforeBasicPercent`: Open API `공격력` tooltip `기본 공격력` divided by parsed `기본 공격력 %` sources. This is the preferred displayed-combat-power base when available because the profile already includes permanent character state that equipment tooltips do not expose cleanly.
   - `EquipmentFormulaBaseAttackPower`: `sqrt(sum(equipment.MainStatValue) * effectiveWeaponPower / 6)`, where `effectiveWeaponPower = rawWeaponPower * (1 + sum(weaponPowerPercentSources) / 100)`. This is used only as fallback when the profile tooltip is missing, and is also exposed as a diagnostic gap against the profile-derived base.
-- Equipment formula output is already pure/base attack. Do not divide it by `기본 공격력 %` again. Apply `기본 공격력 %` as its own bucket after selecting the pure base.
+- Equipment formula output is already pure/base attack. Do not divide it by `기본 공격력 %` again. Apply `기본 공격력 %` as a normal base-attack factor after selecting the pure base.
 - When only weapon power percent changes and main stat is fixed, damage contribution is approximately `sqrt(1 + weaponPowerPercent / 100) - 1`. Exact final attack-power contribution needs current main stat, current weapon power, attack-power buckets, and Lostark rounding behavior.
 - `아드레날린` is modeled at max stacks for attack power. Example: `공격력이 1.50% 증가, 최대 6중첩` is treated as `+9.0%` attack power in the current max-stack context.
 - Accessory `공격력 +%` lines share the attack-power percent bucket with max-stack `아드레날린`, so their marginal contribution is calculated against the existing attack-power context.
@@ -207,7 +212,7 @@ accessoryAdditionalDamageContribution =
   - 1
 ```
 
-Card collection effects and pet-ranch additional damage are not exposed by the current Lostark Open API response, so they are not included yet.
+Equipped card-set effects are exposed by `/armories/characters/{characterName}/cards` and normalized in `lib/lostark/cards.js`. Card damage effects such as elemental damage and direct outgoing damage are summed within the card bucket and multiplied directly into the combat-power estimate. Card collection effects and pet-ranch additional damage are not exposed by the current Lostark Open API response, so they are not included yet.
 
 ### Evolution-Type Damage
 
