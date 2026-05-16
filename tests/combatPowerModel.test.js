@@ -943,16 +943,70 @@ test("converts ark grid gem effects into additive dealer combat power buckets", 
   const additionalDamageFactor = analysis.Factors.find((item) => item.Category === "additionalDamage");
   const gemSummary = analysis.CategorySummary.find((item) => item.Category === "arkGridGem");
 
-  assert.deepEqual(gemFactors.map((item) => item.Percent), [0.6482, 0.99505]);
-  assert.deepEqual(gemFactors.map((item) => item.SourceName), ["보스 피해", "무기 공격력"]);
-  assert.deepEqual(gemFactors.map((item) => item.ExistingBossDamageReference || null), [1.82, null]);
-  assert.equal(attackPowerFactor.Percent, 0.8);
-  assert.deepEqual(attackPowerFactor.Sources.map((item) => [item.SourceName, item.Percent]), [["공격력", 0.8]]);
+  assert.deepEqual(gemFactors.map((item) => item.Percent), [0.8, 0.66, 0.99505]);
+  assert.deepEqual(gemFactors.map((item) => item.SourceName), ["공격력", "보스 피해", "무기 공격력"]);
+  assert.equal(attackPowerFactor, undefined);
   assert.equal(additionalDamageFactor.Percent, 2.77);
   assert.deepEqual(additionalDamageFactor.Sources.map((item) => [item.SourceName, item.Percent]), [["추가 피해", 1.77], ["펫 목장", 1]]);
-  assert.equal(gemSummary.Percent, 1.65);
-  assert.equal(gemSummary.EstimatePercent, 1.65);
+  assert.equal(gemSummary.Percent, 2.47);
+  assert.equal(gemSummary.EstimatePercent, 2.47);
   assert.equal(analysis.Formula.Estimate, 39.26);
+});
+
+test("uses attack-increase math for flat attack and ark grid attack gems", () => {
+  const analysis = buildCombatPowerAnalysis({
+    profile: {
+      Stats: [attackStat({ basic: 176096, increase: 7416 })]
+    },
+    equipment: [
+      { Type: "목걸이", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +390"] }] },
+      { Type: "귀걸이", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +0.95%", "공격력 +390"] }] },
+      { Type: "귀걸이", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +0.95%", "공격력 +390"] }] },
+      { Type: "반지", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +390"] }] },
+      { Type: "반지", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +390"] }] }
+    ],
+    arkGrid: {
+      Effects: [
+        { Name: "공격력", Level: 32, Tooltip: "공격력 <font color='#ffd200'>+1.17%</font>" }
+      ]
+    }
+  });
+  const attackPowerFactor = analysis.Factors.find((item) => item.Category === "attackPower");
+  const arkGridAttackGemFactor = analysis.Factors.find((item) => item.Label === "아크그리드 젬 공격력");
+  const attackMultiplier = analysis.Factors
+    .filter((item) => ["attackPower", "arkGridGem"].includes(item.Category))
+    .reduce((product, item) => product * item.Multiplier, 1);
+
+  assert.equal(attackPowerFactor.Percent, 3.02839);
+  assert.equal(attackPowerFactor.RawPercent, 1.9);
+  assert.equal(attackPowerFactor.FlatAttackPower, 1950);
+  assert.equal(arkGridAttackGemFactor.Percent, 1.14818);
+  assert.equal(arkGridAttackGemFactor.AttackPowerContextPercent, 1.9);
+  assert.equal(Number(((attackMultiplier - 1) * 100).toFixed(5)), 4.21134);
+});
+
+test("uses ark grid attack core percent as attack-gem marginal context", () => {
+  const analysis = buildCombatPowerAnalysis({
+    profile: {
+      Stats: [attackStat({ basic: 197512, increase: 14452 })]
+    },
+    equipment: [
+      { Type: "귀걸이", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +1.55%"] }] },
+      { Type: "귀걸이", DetailSections: [{ Title: "연마 효과", Lines: ["공격력 +1.55%"] }] }
+    ],
+    arkGrid: {
+      Slots: [
+        { Name: "혼돈의 별 코어 : 공격", Grade: "유물", Point: 19 }
+      ],
+      Effects: [
+        { Name: "공격력", Level: 22, Tooltip: "공격력 <font color='#ffd200'>+0.80%</font>" }
+      ]
+    }
+  });
+  const arkGridAttackGemFactor = analysis.Factors.find((item) => item.Label === "아크그리드 젬 공격력");
+
+  assert.equal(arkGridAttackGemFactor.Percent, 0.7614);
+  assert.equal(arkGridAttackGemFactor.AttackPowerContextPercent, 5.07);
 });
 
 test("matches observed ark grid multiplier for Boomber core and gem setup", () => {
@@ -981,5 +1035,5 @@ test("matches observed ark grid multiplier for Boomber core and gem setup", () =
     .filter((item) => ["arkGrid", "arkGridGem", "attackPower", "additionalDamage", "bossDamage"].includes(item.Category))
     .reduce((product, item) => product * item.Multiplier, 1);
 
-  assert.equal(Number(arkGridMultiplier.toFixed(6)), 1.379688);
+  assert.equal(Number(arkGridMultiplier.toFixed(6)), 1.379638);
 });

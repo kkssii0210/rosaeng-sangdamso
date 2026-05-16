@@ -77,7 +77,7 @@ Rules for project modeling:
 - Temporary food or feast style buffs should not be included in `pureBaseAttackPower`.
 - Effects that raise main stat or weapon power through permanent character state affect `pureBaseAttackPower` first. Examples include honing, bracelet stat/weapon-power lines, weapon quality, combat avatar stat, and high-grade ability-stone stat effects.
 - Weapon-power percent sources share one additive bucket before `pureBaseAttackPower`. For example, `깨달음` karma level `+2.5%` plus accessory honing `무기 공격력 +1.8%` and `+0.8%` becomes raw weapon power `* 1.051`, not `* 1.025 * 1.018 * 1.008`.
-- Flat `공격력 +` and percent `공격력 %` are not part of `pureBaseAttackPower`. The Inven model treats them as separate combat-power factors, calibrated around an endgame dealer base-attack reference near `142k`. Exact reference differs slightly by source category, so keep it configurable.
+- Flat `공격력 +` and percent `공격력 %` are not part of `pureBaseAttackPower`. They follow the Open API attack tooltip structure: `finalAttack = (basicAttack + flatAttack) * (1 + attackPercent / 100)`, and `attackIncrease = finalAttack - basicAttack`.
 - Most score factors multiply independently. Do not place combat-power factors into the final-damage bucket model without a separate mapping.
 
 Known combat-power factors from the source, summarized for implementation:
@@ -118,9 +118,9 @@ combatStatFactor = 1 + ((crit + specialization + swiftness) * 0.03) / 100
   - Normal skill gems expose tooltip `기본 공격력 %` and each 4T gem also has an independent pure combat-power multiplier. `기본 공격력 %` multiplies combat power after the pure base attack is selected.
   - 4T pure gem combat-power factors by level: Lv.1 `+1.28%`, Lv.2 `+1.92%`, Lv.3 `+2.56%`, Lv.4 `+3.20%`, Lv.5 `+3.84%`, Lv.6 `+4.48%`, Lv.7 `+5.12%`, Lv.8 `+5.76%`, Lv.9 `+6.40%`, Lv.10 `+7.04%`.
   - Ark-grid gems are read from `/arkgrid.Effects` when available. Dealer combat-power factors currently include `공격력`, `추가 피해`, `보스 피해`, and `무기 공격력`.
-  - Ark-grid gem `공격력` is added to the same displayed attack-power bucket as accessory `공격력 +%` lines.
+  - Ark-grid gem `공격력` is applied as a marginal factor against the current attack-percent context instead of being added raw to accessory attack. Context currently includes accessory `공격력 +%` and chaos star `공격` core attack-percent lines. Formula: `(1 + (contextAttackPercent + gemAttackPercent) / 100) / (1 + contextAttackPercent / 100) - 1`. Boomber context `3.10 + 1.97 = 5.07%`, so gem `+0.80%` contributes `+0.7614%`; 가디언인가 context `1.90%`, so gem `+1.17%` contributes `+1.14818%`.
   - Ark-grid gem `추가 피해` is added to the raw additional-damage bucket with weapon quality, necklace additional damage, and the current pet-ranch `+1.00%` assumption. For example, Boomber's `29.61 + 1.60 + 1.77 + 1.00 = 33.98%`.
-  - Ark-grid gem `보스 피해` is not merged by moving chaos `달 : 불타는 일격` out of the core table, because lower point values do not map cleanly to boss damage. Keep `불타는 일격` on the normal chaos-core combat-power table, then apply the gem as a marginal factor against the Boomber-observed `불타는 일격` boss-damage context `1.82%`: `(1 + (1.82 + gemBossDamage) / 100) / (1 + 1.82 / 100) - 1`.
+  - Ark-grid gem `보스 피해` is applied as its displayed raw percent in a separate Ark-grid-gem factor. Boomber's `+0.66%` gem changed combat power from `5468.93` to `5505.03`, which is `+0.66009%`, so no `불타는 일격` marginal context is applied.
   - Ark-grid gem `무기 공격력` is converted through the base-attack approximation `sqrt(1 + weaponPowerPercent / 100) - 1`.
   - These Ark-grid gem values are multiplied into the current displayed-combat-power estimate as independent factors.
   - Support-oriented Ark-grid gem effects such as `낙인력`, `아군 피해 강화`, and `아군 공격 강화` are not applied to dealer combat power.
@@ -174,12 +174,12 @@ Project implementation notes:
 - We normalize this as `equipment[].WeaponStats.WeaponPower.Value`.
 - Weapon quality additional damage is a separate line such as `추가 피해 +30.00%`; normalize it as `equipment[].WeaponStats.AdditionalDamage.Value`.
 - Combat-power verification now keeps two base-attack candidates separate:
-  - `ProfileBaseAttackBeforeBasicPercent`: Open API `공격력` tooltip `기본 공격력` divided by parsed `기본 공격력 %` sources. This is the preferred displayed-combat-power base when available because the profile already includes permanent character state that equipment tooltips do not expose cleanly.
-  - `EquipmentFormulaBaseAttackPower`: `sqrt(sum(equipment.MainStatValue) * effectiveWeaponPower / 6)`, where `effectiveWeaponPower = rawWeaponPower * (1 + sum(weaponPowerPercentSources) / 100)`. This is used only as fallback when the profile tooltip is missing, and is also exposed as a diagnostic gap against the profile-derived base.
+  - `ProfileBaseAttackBeforeBasicPercent`: Open API `공격력` tooltip `기본 공격력` divided by parsed `기본 공격력 %` sources. This remains useful as a diagnostic, but should not be the long-term source of truth because temporary food can raise weapon power in the profile attack tooltip while not counting toward combat power.
+  - `EquipmentFormulaBaseAttackPower`: `sqrt(sum(equipment.MainStatValue) * effectiveWeaponPower / 6)`, where `effectiveWeaponPower = rawWeaponPower * (1 + sum(weaponPowerPercentSources) / 100)`. The target model should build combat power from internally collected main stat and weapon power so temporary environment state does not affect estimates.
 - Equipment formula output is already pure/base attack. Do not divide it by `기본 공격력 %` again. Apply `기본 공격력 %` as a normal base-attack factor after selecting the pure base.
 - When only weapon power percent changes and main stat is fixed, damage contribution is approximately `sqrt(1 + weaponPowerPercent / 100) - 1`. Exact final attack-power contribution needs current main stat, current weapon power, attack-power buckets, and Lostark rounding behavior.
 - `아드레날린` is modeled at max stacks for attack power. Example: `공격력이 1.50% 증가, 최대 6중첩` is treated as `+9.0%` attack power in the current max-stack context.
-- Accessory `공격력 +%` lines share the attack-power percent bucket with max-stack `아드레날린`, so their marginal contribution is calculated against the existing attack-power context.
+- Accessory attack-power lines use the API attack-increase formula. Percent lines add to `attackPercent`; flat lines add to `flatAttack`, then the factor is `((basicAttack + flatAttack) * (1 + attackPercent / 100)) / basicAttack`. Example 가디언인가: `(176096 + 1950) * 1.019 / 176096 = +3.02839%`.
 - `깨달음` point progress has a hidden weapon-power percent bonus that is not exposed as a normal effect tooltip. Parse `arkPassive.Points[].Description` and add `깨달음 level * 0.1%` as weapon power. Example: `6랭크 25레벨` gives weapon power `+2.5%`.
 - Accessory `무기 공격력 +%` lines share the weapon-power percent context with the hidden `깨달음` bonus.
 
