@@ -194,6 +194,45 @@
 - 붐버 외 캐릭터에서 깨달음 `100P cap +70%`, 보석 기본공%, 어빌리티 스톤 각인보너스가 동일하게 맞는지 확인해야 한다.
 - 에스더 무기 보유 캐릭터는 무기/기본공격력 경로가 일반 무기와 다른지 별도 샘플로 검증해야 한다.
 
+## 2026-05-18
+
+### 목표
+
+- 기존 Next.js API Route를 바로 갈아엎지 않고, Java Spring Boot 기반 BFF를 별도 프로세스로 세우는 방향을 확정했다.
+- 첫 백엔드 범위는 `GET /api/characters/{name}` 캐릭터 조회 endpoint로 좁혔다.
+- 조회 실패, API 키 누락, Lostark API 장애를 사용자에게 구분된 코드와 메시지로 반환하도록 정리했다.
+
+### 변경
+
+- `docs/superpowers/specs/2026-05-18-spring-boot-bff-design.md`와 `docs/superpowers/plans/2026-05-18-spring-boot-bff.md`에 Spring Boot BFF 설계와 실행 계획을 작성했다.
+- Java 21 기반 Spring Boot 4 프로젝트를 `backend/`에 추가하고 Maven wrapper, actuator, validation, webmvc 구성을 생성했다.
+- `LostarkProperties`를 추가해 `LOSTARK_API_KEY`를 우선 사용하고 `LOSTARK_OPEN_API_KEY`를 fallback으로 쓰도록 했다.
+- 공통 오류 응답인 `ApiErrorResponse`, `BffException`, `GlobalExceptionHandler`를 추가했다.
+- `LostarkApiClient`와 `LostarkClientConfig`를 추가해 base URL, 인증 헤더, timeout, retry, Lostark API 오류 매핑을 담당하게 했다.
+- `CharacterService`와 `CharacterResponse`를 추가해 Lostark armory endpoint 응답을 프론트 DTO 형태로 조립했다.
+- profile 응답은 필수로 처리하고, profile이 404 또는 `null`이면 `CHARACTER_NOT_FOUND`와 `없는 캐릭터입니다.`를 반환하도록 했다.
+- 장비, 아바타, 아크패시브, 아크그리드, 카드, 스킬, 각인, 보석 endpoint는 선택 응답으로 두고 404면 `null`로 매핑했다.
+- `CharacterController`를 추가해 `GET /api/characters/{name}`를 열고, 공백 캐릭터명은 `INVALID_CHARACTER_NAME`으로 거절하도록 했다.
+- Lostark API 키가 설정되지 않은 경우에는 `MISSING_API_KEY`와 `잠시 설정을 확인하고 있어요.`로 마스킹했다.
+- JS 계산 이관이 필요한 `paradiseOrb`, `classIdentityEffects`, `criticalStats`, `combatPowerAnalysis`, `upgradeEfficiency`는 이번 단계에서 명시적 `null`로 내려주도록 했다.
+- `.env.example`과 `README.md`에 Spring Boot backend 실행 명령, 8080 기본 포트, 환경 변수 설정 방식을 추가했다.
+
+### 검증
+
+- `backend`에서 `./mvnw test`: 22개 테스트 통과
+- `backend`에서 `./mvnw spring-boot:run`: Tomcat 8080 기동 확인 후 종료
+- 루트에서 `npm test`: 14개 테스트 통과
+- `npm run lint`
+- `npm run build`
+- `git diff --check`
+
+### 다음 작업
+
+- Next.js 프론트가 새 Spring Boot BFF endpoint를 호출하도록 개발 환경 proxy 또는 API base URL 전략을 정해야 한다.
+- 현재 Spring Boot 응답은 원본 armory payload 중심이므로, 기존 JS 계산 모듈을 Java로 옮길지 백엔드/프론트 경계를 다시 나눌지 결정해야 한다.
+- 실제 Lostark API 키와 캐릭터명으로 `GET /api/characters/{name}` 통합 smoke test를 추가해야 한다.
+- `spring-boot:run` 실행 시 로컬 `.env.local`을 자동으로 읽지 않는 점을 운영/개발 실행 스크립트에서 더 편하게 만들 수 있는지 검토한다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
