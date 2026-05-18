@@ -30,6 +30,30 @@ npm run lint
 npm run build
 ```
 
+## Spring Boot backend
+
+The Java backend lives in `backend/` and currently exposes the first BFF endpoint, `GET /api/characters/{name}`:
+
+```bash
+cd backend
+./mvnw test
+./mvnw spring-boot:run
+```
+
+By default it runs on `http://localhost:8080`.
+
+It reads `LOSTARK_API_KEY` first and falls back to `LOSTARK_OPEN_API_KEY`.
+
 ## 환경 변수
 
-`.env.example`을 참고해 `.env.local`을 만든다. `.env.local`은 Git에 올리지 않는다.
+Next.js 개발 서버는 `.env.example`을 참고해 루트 `.env.local`을 만든다. `.env.local`은 Git에 올리지 않는다.
+
+Spring Boot backend는 `.env.local`을 자동으로 읽지 않으므로 실행 셸에 환경 변수를 설정한다.
+
+```bash
+export LOSTARK_API_KEY=your_lostark_open_api_jwt
+cd backend
+./mvnw spring-boot:run
+```
+
+`LOSTARK_OPEN_API_KEY`도 fallback으로 사용할 수 있다.
