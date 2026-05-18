@@ -60,6 +60,10 @@ public class CharacterService {
                 throw characterNotFound();
             }
 
+            if (isMissingApiKey(exception)) {
+                throw missingApiKey();
+            }
+
             throw lostarkApiError();
         }
     }
@@ -72,8 +76,20 @@ public class CharacterService {
                 return null;
             }
 
+            if (isMissingApiKey(exception)) {
+                throw missingApiKey();
+            }
+
             throw lostarkApiError();
         }
+    }
+
+    private boolean isMissingApiKey(LostarkApiException exception) {
+        return exception.getCode() == LostarkApiErrorCode.AUTH_ERROR && exception.getStatus() == null;
+    }
+
+    private BffException missingApiKey() {
+        return new BffException(HttpStatus.INTERNAL_SERVER_ERROR, "MISSING_API_KEY", "잠시 설정을 확인하고 있어요.");
     }
 
     private BffException lostarkApiError() {

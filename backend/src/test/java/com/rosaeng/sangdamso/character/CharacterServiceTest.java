@@ -142,6 +142,18 @@ class CharacterServiceTest {
             });
     }
 
+    @Test
+    void mapsMissingApiKeyToInternalServerError() {
+        CharacterService service = new CharacterService(clientWithBlankAuthorization());
+
+        assertThatThrownBy(() -> service.findCharacter("도화가"))
+            .isInstanceOfSatisfying(BffException.class, exception -> {
+                assertThat(exception.status()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                assertThat(exception.code()).isEqualTo("MISSING_API_KEY");
+                assertThat(exception.userMessage()).isEqualTo("잠시 설정을 확인하고 있어요.");
+            });
+    }
+
     private CharacterService serviceWithResponses(Map<String, JsonNode> responses) {
         return new CharacterService(client((method, path, authorization) -> responses.get(path)));
     }
@@ -149,6 +161,11 @@ class CharacterServiceTest {
     private LostarkApiClient client(LostarkApiClient.RequestExecutor executor) {
         LostarkProperties properties = new LostarkProperties("token", "", "https://example.com", 5, 0);
         return new LostarkApiClient(properties, executor);
+    }
+
+    private LostarkApiClient clientWithBlankAuthorization() {
+        LostarkProperties properties = new LostarkProperties("", "", "https://example.com", 5, 0);
+        return new LostarkApiClient(properties, (method, path, authorization) -> node(path));
     }
 
     private JsonNode node(String source) {
