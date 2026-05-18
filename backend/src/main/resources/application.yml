@@ -1,0 +1,7 @@
+server:
+  port: 8080
+
+lostark:
+  base-url: https://developer-lostark.game.onstove.com
+  timeout-seconds: 5
+  retry-count: 1
