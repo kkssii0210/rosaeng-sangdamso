@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import AppNavigation from "../components/AppNavigation.jsx";
 import ArmoryView from "../components/ArmoryView.jsx";
 import WelcomeScene from "../components/WelcomeScene.jsx";
 
@@ -43,6 +44,7 @@ export default function Home() {
       }
 
       setArmory(data);
+      window.localStorage.setItem("sggu:lastCharacterName", characterName);
       setMessages([
         { role: "sggu", text: "현재 너의 캐릭터 장비창이야" },
         { role: "sggu", text: "엘릭서는 제외하고 장비, 아크패시브, 스킬만 먼저 봤어." }
@@ -73,6 +75,7 @@ export default function Home() {
 
   return (
     <main className={`home ${armory ? "armory-home" : ""}`}>
+      <AppNavigation />
       <section className={`consult-stage ${armory ? "armory-mode" : "intro-mode"}`} aria-label="슥구 성장 상담">
         <div className="advisor-rail">
           <div className="speech-bubble">
