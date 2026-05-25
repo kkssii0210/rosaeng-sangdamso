@@ -233,6 +233,64 @@
 - 실제 Lostark API 키와 캐릭터명으로 `GET /api/characters/{name}` 통합 smoke test를 추가해야 한다.
 - `spring-boot:run` 실행 시 로컬 `.env.local`을 자동으로 읽지 않는 점을 운영/개발 실행 스크립트에서 더 편하게 만들 수 있는지 검토한다.
 
+## 2026-05-25
+
+### 목표
+
+- 전투력 효율 시뮬레이터가 악세사리만 보지 않고, 캐릭터 기준으로 가장 효율 좋은 스펙업 후보를 top5로 비교하게 만든다.
+- 무기/방어구 강화, 각인서, 보석, 아바타 비용을 경매장/거래소 시세 기반으로 계산한다.
+- 상담사 슥구에게 클라우드 LLM이 아니라 로컬 LLM을 연결하는 작은 첫 버전을 만든다.
+- Python 없이 Next.js API route와 Ollama HTTP API만으로 시작한다.
+
+### 변경
+
+- 전투력 효율 시뮬레이터에 악세사리, 무기 강화, 방어구 강화, 각인서, 보석, 전설 아바타 후보를 함께 비교하는 스펙업 추천 top5 구조를 추가했다.
+- 경매장/거래소 시세 snapshot에 강화 재료, 각인서, 보석, 직업별 아바타 가격을 포함하고 5분 캐시를 적용했다.
+- 악세사리 검색은 품질 필터 중심에서 벗어나 현재 착용 악세의 특수옵션 단계 기준으로 검색하도록 바꿨고, 3연마 기준 `UpgradeLevel=3`을 고정했다.
+- 캐릭터 분석 화면에서 전투력 효율 시뮬레이터로 넘어갈 때 검색한 캐릭터명이 유지되도록 연결하고, 돌아가기도 분석 화면으로 복귀하게 했다.
+- 현재 교체 대상 악세사리 표시는 특수옵션 중심으로 정리하고, 아르데타인 캐릭터 기준 주스탯은 민첩만 보여주도록 개선했다.
+- 영웅 아바타 착용 캐릭터에게만 전설 아바타 스펙업 후보가 나오도록 하고, 이미 전설 아바타를 착용한 캐릭터에는 중복 추천하지 않게 했다.
+- `POST /api/consult/sggu` 상담 API를 추가했다.
+- 캐릭터 장비/아크패시브/스킬/보석/스펙업 추천을 compact context로 요약하는 `lib/consultant/sgguContext.js`를 추가했다.
+- 슥구 말투와 답변 제한을 관리하는 `lib/consultant/sgguPrompt.js`를 추가했다.
+- Ollama `/api/chat` 호출용 `lib/llm/localLlmClient.js`를 추가했다.
+- 첫 화면의 캐릭터 조회 말풍선을 `components/SgguConsultantChat.jsx`로 분리하고, 캐릭터 조회 뒤 같은 입력창에서 슥구에게 질문할 수 있게 했다.
+- 전투력 효율 페이지에서 넘어온 캐릭터명은 홈 분석 화면에서 자동 조회되도록 연결했다.
+- 로컬 환경에는 Windows용 Ollama `0.24.0`을 설치하고 `qwen2.5:7b` 모델을 내려받았다. WSL에서 Next.js가 Windows Ollama 서버에 붙도록 `.env.local`의 `LOCAL_LLM_BASE_URL`을 Windows host 주소로 설정했다.
+
+### Sggu Local LLM Consultant Env
+
+- `LOCAL_LLM_PROVIDER`: optional. Defaults to `ollama`.
+- `LOCAL_LLM_BASE_URL`: optional. Defaults to `http://localhost:11434`.
+- `LOCAL_LLM_MODEL`: optional. Defaults to `qwen2.5:7b`; set this to a model installed in Ollama.
+- `LOCAL_LLM_TIMEOUT_MS`: optional. Defaults to `30000`.
+- `LOSTARK_API_KEY` or `LOSTARK_OPEN_API_KEY`: still required for character lookup and market data.
+
+First local run:
+
+```bash
+ollama serve
+ollama pull qwen2.5:7b
+npm run dev:restart
+```
+
+The LLM consultant receives a compact character/spec-up summary from the app and answers from that supplied data. It does not call Lost Ark APIs directly.
+
+### 검증
+
+- `npm test -- tests/sgguContext.test.js tests/sgguPrompt.test.js tests/localLlmClient.test.js tests/sgguConsultApi.test.js tests/sgguConsultantState.test.js`
+- `npm test`
+- `node node_modules/eslint/bin/eslint.js app/api/consult/sggu/route.js app/page.jsx components/SgguConsultantChat.jsx lib/consultant/sgguContext.js lib/consultant/sgguPrompt.js lib/llm/localLlmClient.js lib/ui/sgguConsultantState.js tests/sgguContext.test.js tests/sgguPrompt.test.js tests/localLlmClient.test.js tests/sgguConsultApi.test.js tests/sgguConsultantState.test.js`
+- `npm run build`
+- `curl http://127.0.0.1:3000/api/consult/sggu` 테스트 요청으로 Ollama `qwen2.5:7b` 상담 응답 확인
+
+### 다음 작업
+
+- 로컬 Ollama가 꺼져 있을 때 UI에서 더 짧고 명확한 안내 문구를 보여줄지 검토한다.
+- 패치노트/로스트아크 용어 데이터는 다음 단계에서 RAG 형태로 붙인다.
+- 상담 요청 payload는 현재 raw armory를 포함하므로, 이후 서버 세션 또는 compact context 전송으로 줄일 수 있다.
+- 경매장/거래소 가격 후보가 너무 적거나 API 응답이 비어 있을 때 사용자에게 후보 제외 사유를 더 자세히 보여줄 수 있다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.

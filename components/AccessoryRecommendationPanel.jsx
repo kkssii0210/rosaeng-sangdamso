@@ -1,4 +1,5 @@
 import { formatNumber, valueOf } from "./armoryUtils.js";
+import { buildAccessoryDisplay } from "../lib/spec/accessoryDisplay.js";
 
 function formatGold(value) {
   const number = Number(value);
@@ -10,9 +11,8 @@ function formatPercent(value) {
   return Number.isFinite(number) ? `${number.toFixed(4)}%` : "-";
 }
 
-function AccessorySummary({ title, accessory }) {
-  const sections = Array.isArray(accessory?.DetailSections) ? accessory.DetailSections : [];
-  const lines = sections.flatMap((section) => section.lines || section.Lines || []).slice(0, 4);
+function AccessorySummary({ title, accessory, mainStatName }) {
+  const display = buildAccessoryDisplay({ accessory, mainStatName });
 
   return (
     <div className="accessory-summary">
@@ -22,11 +22,18 @@ function AccessorySummary({ title, accessory }) {
         <span>품질 {valueOf(accessory, ["Quality", "quality"], "-")}</span>
         <span>깨달음 {valueOf(accessory, ["EnlightenmentPoint", "enlightenmentPoint"], "-")}</span>
       </div>
-      <ul>
-        {lines.map((line, index) => (
-          <li key={`${line}-${index}`}>{line}</li>
-        ))}
-      </ul>
+      <div className="accessory-option-block">
+        <span className="accessory-option-label">주스탯</span>
+        <strong className="accessory-main-stat">{display.MainStatLine || "-"}</strong>
+      </div>
+      <div className="accessory-option-block">
+        <span className="accessory-option-label">연마 효과</span>
+        <ul className="accessory-refinement-list">
+          {display.RefinementLines.map((line, index) => (
+            <li key={`${line}-${index}`}>{line}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -84,8 +91,8 @@ export default function AccessoryRecommendationPanel({ recommendation, recovery,
       </div>
 
       <div className="accessory-compare-grid">
-        <AccessorySummary title="현재 교체 대상" accessory={top.ReplacedAccessory} />
-        <AccessorySummary title="추천 후보" accessory={top.Candidate} />
+        <AccessorySummary title="현재 교체 대상" accessory={top.ReplacedAccessory} mainStatName={top.MainStatName} />
+        <AccessorySummary title="추천 후보" accessory={top.Candidate} mainStatName={top.MainStatName} />
       </div>
 
       <div className="recovery-box">

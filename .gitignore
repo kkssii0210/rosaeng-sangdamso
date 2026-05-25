@@ -12,3 +12,8 @@ pnpm-debug.log*
 *.deb
 public/generated/
 .worktrees
+.agents/
+.superpowers/
+.vscode/
+plugins/
+skills-lock.json

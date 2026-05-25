@@ -1,6 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildMarketSnapshot } from "../lib/lostark/marketSnapshot.js";
+import { buildMarketSnapshot, MARKET_SNAPSHOT_QUERIES } from "../lib/lostark/marketSnapshot.js";
+
+test("market snapshot queries explicit weapon honing material prices", () => {
+  const honingMaterials = MARKET_SNAPSHOT_QUERIES.find((group) => group.id === "honing-materials");
+  const honingSupports = MARKET_SNAPSHOT_QUERIES.find((group) => group.id === "honing-supports");
+
+  assert.deepEqual(
+    honingMaterials.requests.map((request) => request.ItemName),
+    ["운명의 파괴석 결정", "운명의 수호석 결정", "위대한 운명의 돌파석", "상급 아비도스 융화 재료", "운명의 파편"]
+  );
+  assert.deepEqual(
+    honingSupports.requests.map((request) => request.ItemName),
+    ["용암의 숨결", "빙하의 숨결"]
+  );
+});
 
 test("normalizes market and auction snapshot groups", () => {
   const snapshot = buildMarketSnapshot(

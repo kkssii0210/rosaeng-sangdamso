@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import ArkPassiveSkillsPage from "./ArkPassiveSkillsPage.jsx";
 import EquipmentPage from "./EquipmentPage.jsx";
 import UpgradeEfficiencyPage from "./UpgradeEfficiencyPage.jsx";
 import { formatNumber, listOf, valueOf } from "./armoryUtils.js";
+import { buildEfficiencyHref } from "../lib/ui/efficiencyNavigation.js";
 
 const ARMORY_PAGE_IDS = new Set(["equipment", "build", "upgrade"]);
 
@@ -98,6 +100,11 @@ export default function ArmoryView({ armory }) {
             <span>전투력</span>
             <strong>{combatPower ? formatNumber(combatPower) : "-"}</strong>
           </div>
+        </div>
+        <div className="character-actions">
+          <Link className="character-efficiency-link" href={buildEfficiencyHref(characterName)}>
+            전투력 효율 시뮬레이터
+          </Link>
         </div>
       </header>
 

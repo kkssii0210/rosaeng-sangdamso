@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import AppNavigation from "../components/AppNavigation.jsx";
 import ArmoryView from "../components/ArmoryView.jsx";
+import SgguConsultantChat from "../components/SgguConsultantChat.jsx";
 import WelcomeScene from "../components/WelcomeScene.jsx";
-
-const starterMessages = [
-  {
-    role: "sggu",
-    text: "캐릭터명을 입력해봐. 공식 API 기준으로 장비, 아크패시브, 스킬부터 정리해줄게."
-  }
-];
+import { resolveAnalysisCharacterName } from "../lib/ui/efficiencyNavigation.js";
+import {
+  appendAssistantMessage,
+  appendErrorMessage,
+  appendUserMessage,
+  createInitialConsultMessages
+} from "../lib/ui/sgguConsultantState.js";
 
 const apiErrorMessages = {
   MISSING_API_KEY: "공식 Lostark Open API 키가 필요해. .env.local에 LOSTARK_API_KEY를 설정해줘.",
@@ -25,48 +26,137 @@ function getApiErrorMessage(data) {
 }
 
 export default function Home() {
-  const [messages, setMessages] = useState(starterMessages);
+  const [messages, setMessages] = useState(() => createInitialConsultMessages());
   const [input, setInput] = useState("");
   const [armory, setArmory] = useState(null);
+  const [specUpRecommendation, setSpecUpRecommendation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isConsulting, setIsConsulting] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
+  const [isCheckingRoute, setIsCheckingRoute] = useState(true);
+  const autoLoadStartedRef = useRef(false);
+  const consultInFlightRef = useRef(false);
 
-  async function loadCharacter(characterName) {
+  const loadCharacter = useCallback(async (characterName) => {
     setIsLoading(true);
+    setArmory(null);
+    setSpecUpRecommendation(null);
     setMessages([{ role: "sggu", text: "공식 API에서 장비창을 불러오는 중이야." }]);
 
     try {
       const response = await fetch(`/api/characters/${encodeURIComponent(characterName)}`);
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(getApiErrorMessage(data));
       }
 
       setArmory(data);
+      setSpecUpRecommendation(Array.isArray(data?.upgradeEfficiency?.Candidates)
+        ? {
+          Recommendation: {
+            TopCandidates: data.upgradeEfficiency.Candidates.slice(0, 5)
+          }
+        }
+        : null);
       window.localStorage.setItem("sggu:lastCharacterName", characterName);
+      setInput("");
       setMessages([
         { role: "sggu", text: "현재 너의 캐릭터 장비창이야" },
         { role: "sggu", text: "엘릭서는 제외하고 장비, 아크패시브, 스킬만 먼저 봤어." }
       ]);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "캐릭터 정보를 불러오지 못했어.";
+      setArmory(null);
+      setSpecUpRecommendation(null);
       setMessages([{ role: "error", text: message }]);
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryCharacterName = resolveAnalysisCharacterName(searchParams);
+
+    if (!queryCharacterName || autoLoadStartedRef.current) {
+      setIsCheckingRoute(false);
+      return;
+    }
+
+    autoLoadStartedRef.current = true;
+    setHasEntered(true);
+    setInput(queryCharacterName);
+    setIsCheckingRoute(false);
+    loadCharacter(queryCharacterName);
+  }, [loadCharacter]);
+
+  const askSggu = useCallback(async (question) => {
+    if (!armory || consultInFlightRef.current) {
+      return;
+    }
+
+    const conversation = messages;
+
+    consultInFlightRef.current = true;
+    setIsConsulting(true);
+    setMessages(appendUserMessage(conversation, question));
+    setInput("");
+
+    try {
+      const response = await fetch("/api/consult/sggu", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          message: question,
+          conversation,
+          armory,
+          specUpRecommendation
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.message || "슥구 상담 응답을 불러오지 못했어.");
+      }
+
+      const answer = typeof data?.Answer === "string" ? data.Answer.trim() : "";
+
+      if (!answer) {
+        throw new Error("슥구 상담 응답을 불러오지 못했어.");
+      }
+
+      setMessages((currentMessages) => appendAssistantMessage(currentMessages, answer));
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "슥구 상담 응답을 불러오지 못했어.";
+      setMessages((currentMessages) => appendErrorMessage(currentMessages, message));
+    } finally {
+      consultInFlightRef.current = false;
+      setIsConsulting(false);
+    }
+  }, [armory, messages, specUpRecommendation]);
 
   function handleSubmit(event) {
     event.preventDefault();
 
-    const characterName = input.trim();
+    const submittedInput = input.trim();
 
-    if (!characterName || isLoading) {
+    if (!submittedInput || isLoading || isConsulting) {
       return;
     }
 
-    loadCharacter(characterName);
+    if (armory) {
+      askSggu(submittedInput);
+      return;
+    }
+
+    loadCharacter(submittedInput);
+  }
+
+  if (isCheckingRoute && !armory) {
+    return null;
   }
 
   if (!hasEntered && !armory) {
@@ -78,39 +168,15 @@ export default function Home() {
       <AppNavigation />
       <section className={`consult-stage ${armory ? "armory-mode" : "intro-mode"}`} aria-label="슥구 성장 상담">
         <div className="advisor-rail">
-          <div className="speech-bubble">
-            <span className="bubble-puff puff-one" aria-hidden="true" />
-            <span className="bubble-puff puff-two" aria-hidden="true" />
-            <span className="bubble-puff puff-three" aria-hidden="true" />
-            <span className="bubble-puff puff-four" aria-hidden="true" />
-            <div className="bubble-kicker" aria-hidden="true">
-              <span className="bubble-kicker-dot" />
-              슥구 상담소
-            </div>
-            <div className="message-log" aria-live="polite">
-              {messages.map((message, index) => (
-                <div className={`message ${message.role}`} key={`${message.role}-${index}-${message.text}`}>
-                  {message.text}
-                </div>
-              ))}
-            </div>
-
-            <form className="chat-form" onSubmit={handleSubmit}>
-              <label className="sr-only" htmlFor="consult-input">
-                조회할 로스트아크 캐릭터명 입력
-              </label>
-              <input
-                id="consult-input"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="캐릭터명을 입력해줘"
-                autoComplete="off"
-              />
-              <button type="submit" disabled={isLoading}>
-                {isLoading ? "조회중" : "조회"}
-              </button>
-            </form>
-          </div>
+          <SgguConsultantChat
+            messages={messages}
+            input={input}
+            onInputChange={setInput}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            isConsulting={isConsulting}
+            hasArmory={Boolean(armory)}
+          />
 
           <div className="sggu-wrap">
             <Image

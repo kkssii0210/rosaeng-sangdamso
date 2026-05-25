@@ -31,6 +31,10 @@ function gainLabel(type) {
     return "주스탯";
   }
 
+  if (type === "combatPower") {
+    return "전투력";
+  }
+
   return "효율";
 }
 

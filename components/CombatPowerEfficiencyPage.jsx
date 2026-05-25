@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AccessoryRecommendationPanel from "./AccessoryRecommendationPanel.jsx";
+import SpecUpRecommendationPanel from "./SpecUpRecommendationPanel.jsx";
+import { buildAnalysisHref, resolveEfficiencyCharacterName } from "../lib/ui/efficiencyNavigation.js";
 
 export default function CombatPowerEfficiencyPage() {
   const [characterName, setCharacterName] = useState("");
@@ -10,52 +13,10 @@ export default function CombatPowerEfficiencyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
   const [error, setError] = useState("");
+  const requestInFlightRef = useRef(false);
+  const analysisHref = buildAnalysisHref(result?.CharacterName || characterName);
 
-  useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      const recent = window.localStorage.getItem("sggu:lastCharacterName") || "";
-      setCharacterName(recent);
-    }, 0);
-
-    return () => window.clearTimeout(timerId);
-  }, []);
-
-  async function loadRecommendation(event) {
-    event.preventDefault();
-    const name = characterName.trim();
-
-    if (!name || isLoading) {
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-    setResult(null);
-    setRecovery(null);
-
-    try {
-      const response = await fetch(`/api/efficiency/accessories/${encodeURIComponent(name)}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || "전투력 효율을 계산하지 못했어.");
-      }
-
-      setResult(data);
-      window.localStorage.setItem("sggu:lastCharacterName", name);
-
-      const top = data?.Recommendation?.TopRecommendation;
-      if (top) {
-        loadRecovery(top);
-      }
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "전투력 효율을 계산하지 못했어.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function loadRecovery(top) {
+  const loadRecovery = useCallback(async (top) => {
     setIsRecoveryLoading(true);
 
     try {
@@ -78,11 +39,73 @@ export default function CombatPowerEfficiencyPage() {
     } finally {
       setIsRecoveryLoading(false);
     }
+  }, []);
+
+  const loadRecommendationByName = useCallback(async (name) => {
+    const normalizedName = name.trim();
+
+    if (!normalizedName || requestInFlightRef.current) {
+      return;
+    }
+
+    requestInFlightRef.current = true;
+    setIsLoading(true);
+    setError("");
+    setResult(null);
+    setRecovery(null);
+
+    try {
+      const response = await fetch(`/api/efficiency/spec-up/${encodeURIComponent(normalizedName)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || "전투력 효율을 계산하지 못했어.");
+      }
+
+      setResult(data);
+      window.localStorage.setItem("sggu:lastCharacterName", normalizedName);
+
+      const top = data?.Recommendation?.AccessoryRecommendation?.TopRecommendation;
+      if (top) {
+        loadRecovery(top);
+      }
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "전투력 효율을 계산하지 못했어.");
+    } finally {
+      setIsLoading(false);
+      requestInFlightRef.current = false;
+    }
+  }, [loadRecovery]);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const initialName = resolveEfficiencyCharacterName({
+        searchParams,
+        recentCharacterName: window.localStorage.getItem("sggu:lastCharacterName") || ""
+      });
+
+      setCharacterName(initialName);
+
+      if (searchParams.has("character") && initialName) {
+        loadRecommendationByName(initialName);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, [loadRecommendationByName]);
+
+  function loadRecommendation(event) {
+    event.preventDefault();
+    loadRecommendationByName(characterName);
   }
 
   return (
     <section className="efficiency-shell" aria-labelledby="efficiency-title">
       <div className="efficiency-header">
+        <Link className="efficiency-back-link" href={analysisHref}>
+          캐릭터 분석으로 돌아가기
+        </Link>
         <p className="eyebrow">Simulator</p>
         <h1 id="efficiency-title">전투력 효율 시뮬레이터</h1>
       </div>
@@ -104,9 +127,16 @@ export default function CombatPowerEfficiencyPage() {
       </form>
 
       {error ? <p className="error-state">{error}</p> : null}
-      {isLoading ? <p className="empty-state">경매장 후보를 탐색하고 전투력 효율을 계산하는 중이야.</p> : null}
+      {isLoading ? <p className="empty-state">경매장 후보와 강화 기대비용을 같이 계산하는 중이야.</p> : null}
       {result ? (
-        <AccessoryRecommendationPanel recommendation={result.Recommendation} recovery={recovery} isRecoveryLoading={isRecoveryLoading} />
+        <>
+          <SpecUpRecommendationPanel recommendation={result.Recommendation} />
+          <AccessoryRecommendationPanel
+            recommendation={result.Recommendation?.AccessoryRecommendation}
+            recovery={recovery}
+            isRecoveryLoading={isRecoveryLoading}
+          />
+        </>
       ) : null}
     </section>
   );
