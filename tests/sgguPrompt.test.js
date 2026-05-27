@@ -74,3 +74,41 @@ test("serializes nullish context as empty object", () => {
     assert.doesNotMatch(messages.at(-1).content, /\[캐릭터 데이터\]\n(?:undefined|null)/);
   }
 });
+
+test("adds approved reference snippets to local chat messages", () => {
+  const messages = buildSgguChatMessages({
+    message: "이번 주 없데이트야?",
+    context: {
+      profile: { characterName: "붐버", className: "스카우터" }
+    },
+    references: [
+      {
+        title: "5월 27일(수) 업데이트 내역 안내",
+        publishedAt: "2026-05-27",
+        category: "patch-note",
+        changeType: "no-update",
+        sectionTitle: "오류 수정",
+        sourceUrl: "https://lostark.game.onstove.com/News/Notice/27",
+        text: "일부 퀘스트 진행 오류를 수정했다.",
+        citationLabel: "2026-05-27 5월 27일(수) 업데이트 내역 안내"
+      }
+    ]
+  });
+
+  assert.match(messages[0].content, /참고 문서/);
+  assert.match(messages.at(-1).content, /\[참고 문서\]/);
+  assert.match(messages.at(-1).content, /changeType: no-update/);
+  assert.match(messages.at(-1).content, /일부 퀘스트 진행 오류/);
+});
+
+test("omits reference section when no references exist", () => {
+  const messages = buildSgguChatMessages({
+    message: "뭐부터 올려?",
+    context: {
+      profile: { characterName: "붐버" }
+    },
+    references: []
+  });
+
+  assert.doesNotMatch(messages.at(-1).content, /\[참고 문서\]/);
+});
