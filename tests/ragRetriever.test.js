@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { retrieveSgguReferences } from "../lib/rag/retriever.js";
+import {
+  extractSearchTerms,
+  retrieveSgguReferences
+} from "../lib/rag/retriever.js";
 
 const documents = [
   {
@@ -116,4 +119,66 @@ test("returns no references when evidence is weak", async () => {
   });
 
   assert.deepEqual(references, []);
+});
+
+test("does not treat current-week wording as standalone patch intent", async () => {
+  const references = await retrieveSgguReferences({
+    message: "이번 주 뭐 먹지?",
+    context: {},
+    documents
+  });
+
+  assert.deepEqual(references, []);
+});
+
+test("extracts search terms from equipment accessories and spec upgrades", () => {
+  const terms = extractSearchTerms({
+    message: "전투력 계산",
+    context: {
+      keyEquipment: [{ name: "고대 장검" }],
+      accessories: [{
+        slot: "목걸이",
+        name: "질서의 펜던트",
+        specialOptions: ["추가 피해", "무기 공격력"]
+      }],
+      topSpecUps: [{ type: "weaponHoning", label: "무기 11->12", target: "12강" }]
+    }
+  });
+
+  assert.deepEqual(
+    terms.filter((term) => [
+      "전투력",
+      "계산",
+      "고대",
+      "장검",
+      "목걸이",
+      "질서의",
+      "펜던트",
+      "추가",
+      "피해",
+      "무기",
+      "공격력",
+      "weaponhoning",
+      "11",
+      "12",
+      "12강"
+    ].includes(term)),
+    [
+      "전투력",
+      "계산",
+      "고대",
+      "장검",
+      "목걸이",
+      "질서의",
+      "펜던트",
+      "추가",
+      "피해",
+      "무기",
+      "공격력",
+      "weaponhoning",
+      "11",
+      "12",
+      "12강"
+    ]
+  );
 });
