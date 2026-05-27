@@ -69,6 +69,14 @@ test("classifies broad-term bug fixes as no-update", () => {
     "no-update"
   );
   assert.equal(
+    classifyPatchNoteChange("클래스 조정 오류를 수정하였습니다.").changeType,
+    "no-update"
+  );
+  assert.equal(
+    classifyPatchNoteChange("시스템 변경 오류를 수정하였습니다.").changeType,
+    "no-update"
+  );
+  assert.equal(
     classifyPatchNoteChange("UI 오류 현상이 수정되었습니다.").changeType,
     "no-update"
   );
@@ -197,6 +205,40 @@ summary: "기존 승인본"
   assert.equal(path.basename(result.filePath), "2026-05-27-update-revision.md");
 });
 
+test("does not match source url outside frontmatter", async () => {
+  const rootDir = await tempRoot();
+  await mkdir(path.join(rootDir, "data/rag/approved/patch-notes"), { recursive: true });
+  await writeFile(path.join(rootDir, "data/rag/approved/patch-notes/other.md"), `---
+title: "다른 문서"
+sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/99999"
+publishedAt: "2026-05-27"
+fetchedAt: "2026-05-27T01:15:00.000Z"
+sourceHash: "sha256:old"
+status: approved
+category: patch-note
+changeType: no-update
+summary: "다른 문서"
+---
+
+본문입니다.
+sourceUrl: https://lostark.game.onstove.com/News/Notice/Views/13001
+`, "utf8");
+
+  const result = await writeFetchedPatchNote({
+    rootDir,
+    note: {
+      title: "5월 27일(수) 업데이트 내역 안내",
+      sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001",
+      publishedAt: "2026-05-27",
+      fetchedAt: "2026-05-27T02:00:00.000Z",
+      body: "신규 본문입니다."
+    }
+  });
+
+  assert.equal(result.action, "written");
+  assert.equal(path.basename(result.filePath), "2026-05-27-update.md");
+});
+
 test("does not skip when matching source hash appears only in body", async () => {
   const rootDir = await tempRoot();
   const note = {
@@ -229,7 +271,34 @@ summary: "기존 인박스"
     note
   });
 
-  assert.equal(result.action, "written");
+  assert.notEqual(result.action, "skipped");
+});
+
+test("writes changed same-source inbox note without overwriting original", async () => {
+  const rootDir = await tempRoot();
+  const originalNote = {
+    title: "5월 27일(수) 업데이트 내역 안내",
+    sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001",
+    publishedAt: "2026-05-27",
+    fetchedAt: "2026-05-27T01:15:00.000Z",
+    body: "본문 A입니다."
+  };
+
+  const first = await writeFetchedPatchNote({ rootDir, note: originalNote });
+  const second = await writeFetchedPatchNote({
+    rootDir,
+    note: {
+      ...originalNote,
+      fetchedAt: "2026-05-27T02:15:00.000Z",
+      body: "본문 B입니다."
+    }
+  });
+
+  assert.notEqual(second.action, "written");
+  assert.notEqual(second.filePath, first.filePath);
+  assert.match(await readFile(first.filePath, "utf8"), /본문 A입니다/);
+  assert.doesNotMatch(await readFile(first.filePath, "utf8"), /본문 B입니다/);
+  assert.match(await readFile(second.filePath, "utf8"), /본문 B입니다/);
 });
 
 test("writes revision inbox file when approved source url changes", async () => {
