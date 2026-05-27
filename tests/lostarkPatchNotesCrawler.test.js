@@ -301,6 +301,84 @@ test("writes changed same-source inbox note without overwriting original", async
   assert.match(await readFile(second.filePath, "utf8"), /본문 B입니다/);
 });
 
+test("writes same-date different-source inbox note without overwriting original", async () => {
+  const rootDir = await tempRoot();
+  const first = await writeFetchedPatchNote({
+    rootDir,
+    note: {
+      title: "5월 27일(수) 업데이트 내역 안내",
+      sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001",
+      publishedAt: "2026-05-27",
+      fetchedAt: "2026-05-27T01:15:00.000Z",
+      body: "첫 번째 공지입니다."
+    }
+  });
+  const second = await writeFetchedPatchNote({
+    rootDir,
+    note: {
+      title: "5월 27일(수) 업데이트 내역 안내",
+      sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13002",
+      publishedAt: "2026-05-27",
+      fetchedAt: "2026-05-27T01:20:00.000Z",
+      body: "두 번째 공지입니다."
+    }
+  });
+
+  assert.equal(first.action, "written");
+  assert.equal(second.action, "written");
+  assert.notEqual(second.filePath, first.filePath);
+  assert.match(await readFile(first.filePath, "utf8"), /첫 번째 공지입니다/);
+  assert.doesNotMatch(await readFile(first.filePath, "utf8"), /두 번째 공지입니다/);
+  assert.match(await readFile(second.filePath, "utf8"), /두 번째 공지입니다/);
+});
+
+test("returns matching duplicate hash file path", async () => {
+  const rootDir = await tempRoot();
+  const note = {
+    title: "5월 27일(수) 업데이트 내역 안내",
+    sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001",
+    publishedAt: "2026-05-27",
+    fetchedAt: "2026-05-27T02:15:00.000Z",
+    body: "현재 본문입니다."
+  };
+  const sourceHash = patchNoteToMarkdown(note).match(/sourceHash: "(sha256:[^"]+)"/)?.[1];
+
+  await mkdir(path.join(rootDir, "data/rag/inbox/patch-notes"), { recursive: true });
+  await writeFile(path.join(rootDir, "data/rag/inbox/patch-notes/2026-05-27-update.md"), `---
+title: "5월 27일(수) 업데이트 내역 안내"
+sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001"
+publishedAt: "2026-05-27"
+fetchedAt: "2026-05-27T01:15:00.000Z"
+sourceHash: "sha256:old"
+status: inbox
+category: patch-note
+changeType: no-update
+summary: "기존 인박스"
+---
+
+이전 본문
+`, "utf8");
+  await writeFile(path.join(rootDir, "data/rag/inbox/patch-notes/2026-05-27-update-revision.md"), `---
+title: "5월 27일(수) 업데이트 내역 안내"
+sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001"
+publishedAt: "2026-05-27"
+fetchedAt: "2026-05-27T02:00:00.000Z"
+sourceHash: "${sourceHash}"
+status: inbox
+category: patch-note
+changeType: no-update
+summary: "같은 해시"
+---
+
+현재 본문입니다.
+`, "utf8");
+
+  const result = await writeFetchedPatchNote({ rootDir, note });
+
+  assert.equal(result.action, "skipped");
+  assert.equal(path.basename(result.filePath), "2026-05-27-update-revision.md");
+});
+
 test("writes revision inbox file when approved source url changes", async () => {
   const rootDir = await tempRoot();
   await mkdir(path.join(rootDir, "data/rag/approved/patch-notes"), { recursive: true });
