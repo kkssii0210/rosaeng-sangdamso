@@ -36,6 +36,25 @@ category: glossary
   assert.match(document.body, /아크 패시브/);
 });
 
+test("normalizes CRLF markdown frontmatter and body", () => {
+  const document = parseRagMarkdown([
+    "---",
+    "title: \"진화\"",
+    "sourceUrl: \"local:glossary/evolution\"",
+    "publishedAt: \"2026-05-27\"",
+    "status: approved",
+    "category: glossary",
+    "---",
+    "",
+    "# 진화",
+    "",
+    "진화는 공용 전투 성능과 관련된다."
+  ].join("\r\n"));
+
+  assert.equal(document.meta.title, "진화");
+  assert.equal(document.body, "# 진화\n\n진화는 공용 전투 성능과 관련된다.");
+});
+
 test("loads only approved markdown documents and skips inbox", async () => {
   const rootDir = await mkdtemp(path.join(tmpdir(), "sggu-rag-docs-"));
 
@@ -49,6 +68,16 @@ category: glossary
 
 깨달음은 아크 패시브 포인트다.
 `);
+  await writeFixture(rootDir, "data/rag/approved/formula/damage.md", `---
+title: "피해 공식"
+sourceUrl: "local:formula/damage"
+publishedAt: "2026-05-27"
+status: approved
+category: formula
+---
+
+피해 공식 문서다.
+`);
   await writeFixture(rootDir, "data/rag/inbox/patch-notes/2026-05-27.md", `---
 title: "5월 27일(수) 업데이트 내역 안내"
 sourceUrl: "https://lostark.game.onstove.com/News/Notice/1"
@@ -60,6 +89,16 @@ changeType: no-update
 
 인박스 문서다.
 `);
+  await writeFixture(rootDir, "data/rag/inbox/glossary/approved-but-inbox.md", `---
+title: "인박스 승인 메타"
+sourceUrl: "local:glossary/inbox"
+publishedAt: "2026-05-27"
+status: approved
+category: glossary
+---
+
+승인 메타지만 인박스 문서다.
+`);
   await writeFixture(rootDir, "data/rag/approved/glossary/bad.md", `---
 title: "분류 없음"
 status: approved
@@ -70,9 +109,34 @@ status: approved
 
   const documents = await loadApprovedRagDocuments({ rootDir });
 
-  assert.equal(documents.length, 1);
-  assert.equal(documents[0].meta.title, "깨달음");
-  assert.equal(documents[0].relativePath, "data/rag/approved/glossary/ark-passive.md");
+  assert.deepEqual(documents.map((document) => document.relativePath), [
+    "data/rag/approved/formula/damage.md",
+    "data/rag/approved/glossary/ark-passive.md"
+  ]);
+  assert.deepEqual(documents.map((document) => document.id), [
+    "formula/damage",
+    "glossary/ark-passive"
+  ]);
+  assert.equal(documents[1].meta.title, "깨달음");
+});
+
+test("returns empty documents when approved directory is missing", async () => {
+  const rootDir = await mkdtemp(path.join(tmpdir(), "sggu-rag-missing-"));
+
+  const documents = await loadApprovedRagDocuments({ rootDir });
+
+  assert.deepEqual(documents, []);
+});
+
+test("throws non-missing approved directory read errors", async () => {
+  const rootDir = await mkdtemp(path.join(tmpdir(), "sggu-rag-broken-"));
+
+  await writeFixture(rootDir, "data/rag/approved", "not a directory");
+
+  await assert.rejects(
+    () => loadApprovedRagDocuments({ rootDir }),
+    (error) => error?.code === "ENOTDIR"
+  );
 });
 
 test("chunks document by headings and paragraph groups", () => {
