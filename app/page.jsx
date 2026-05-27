@@ -11,7 +11,9 @@ import {
   appendAssistantMessage,
   appendErrorMessage,
   appendUserMessage,
-  createInitialConsultMessages
+  buildConsultRequestBody,
+  createInitialConsultMessages,
+  getConsultErrorMessage
 } from "../lib/ui/sgguConsultantState.js";
 
 const apiErrorMessages = {
@@ -109,17 +111,17 @@ export default function Home() {
         headers: {
           "content-type": "application/json"
         },
-        body: JSON.stringify({
+        body: JSON.stringify(buildConsultRequestBody({
           message: question,
           conversation,
           armory,
           specUpRecommendation
-        })
+        }))
       });
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data?.message || "슥구 상담 응답을 불러오지 못했어.");
+        throw new Error(getConsultErrorMessage(data));
       }
 
       const answer = typeof data?.Answer === "string" ? data.Answer.trim() : "";

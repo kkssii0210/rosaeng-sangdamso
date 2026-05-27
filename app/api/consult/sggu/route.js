@@ -40,12 +40,14 @@ export async function POST(request) {
     );
   }
 
-  const context = buildSgguConsultantContext({
-    armory: body?.armory,
-    specUpRecommendation: body?.specUpRecommendation
-  });
+  const context = body?.context && typeof body.context === "object"
+    ? body.context
+    : buildSgguConsultantContext({
+      armory: body?.armory,
+      specUpRecommendation: body?.specUpRecommendation
+    });
 
-  if (!String(context.profile.characterName || "").trim()) {
+  if (!String(context?.profile?.characterName || "").trim()) {
     return errorResponse(
       ERROR_CODES.INVALID_ARMORY,
       "캐릭터를 먼저 조회해줘.",

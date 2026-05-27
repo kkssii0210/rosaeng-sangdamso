@@ -4,7 +4,9 @@ import {
   appendAssistantMessage,
   appendErrorMessage,
   appendUserMessage,
-  createInitialConsultMessages
+  buildConsultRequestBody,
+  createInitialConsultMessages,
+  getConsultErrorMessage
 } from "../lib/ui/sgguConsultantState.js";
 
 test("creates lookup mode starter message", () => {
@@ -29,4 +31,44 @@ test("limits transcript size and appends errors", () => {
   assert.equal(next.length, 12);
   assert.equal(next.at(-1).role, "error");
   assert.equal(next.at(-1).text, "실패");
+});
+
+test("maps local llm unavailable errors to sleeping Sggu copy", () => {
+  assert.equal(
+    getConsultErrorMessage({
+      code: "LOCAL_LLM_UNAVAILABLE",
+      message: "로컬 LLM 서버에 연결하지 못했어. Ollama가 켜져 있는지 확인해줘."
+    }),
+    "현재 슥구가 자고있슥니다."
+  );
+});
+
+test("builds compact consult request body without raw armory payload", () => {
+  const body = buildConsultRequestBody({
+    message: "뭐부터 올려?",
+    conversation: [{ role: "sggu", text: "장비를 봤어." }],
+    armory: {
+      profile: {
+        CharacterName: "붐버",
+        CharacterClassName: "스카우터"
+      },
+      equipment: [
+        { Type: "무기", Name: "+11 세르카 고대 무기", Tooltip: "raw tooltip should stay client-side" }
+      ]
+    },
+    specUpRecommendation: {
+      Recommendation: {
+        TopCandidates: [{ Label: "무기 11->12", GainPercent: 0.3 }]
+      }
+    }
+  });
+
+  assert.equal(body.message, "뭐부터 올려?");
+  assert.deepEqual(body.conversation, [{ role: "sggu", text: "장비를 봤어." }]);
+  assert.equal(body.armory, undefined);
+  assert.equal(body.specUpRecommendation, undefined);
+  assert.equal(body.context.profile.characterName, "붐버");
+  assert.equal(body.context.keyEquipment[0].name, "+11 세르카 고대 무기");
+  assert.equal(body.context.topSpecUps[0].label, "무기 11->12");
+  assert.doesNotMatch(JSON.stringify(body), /raw tooltip/);
 });

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev",
     "dev:restart": "bash scripts/restart-dev.sh",
+    "smoke:sggu": "node scripts/smoke-sggu-consult.mjs",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start",
     "lint": "node node_modules/eslint/bin/eslint.js .",

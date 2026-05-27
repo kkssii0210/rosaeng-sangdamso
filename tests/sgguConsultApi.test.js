@@ -153,6 +153,28 @@ test("sggu consult route rejects blank character names in direct armory payloads
   }
 });
 
+test("sggu consult route rejects empty compact context before calling Ollama", async () => {
+  const restoreEnv = setKnownLocalLlmEnv();
+  const restoreFetch = setFetchMock(async () => {
+    throw new Error("Ollama should not be called with empty compact context");
+  });
+
+  try {
+    const response = await consultSggu(createConsultRequest({
+      message: "상담해줘",
+      context: {}
+    }));
+    const data = await response.json();
+
+    assert.equal(response.status, 400);
+    assert.equal(data.code, "INVALID_ARMORY");
+    assert.equal(data.message, "캐릭터를 먼저 조회해줘.");
+  } finally {
+    restoreFetch();
+    restoreEnv();
+  }
+});
+
 test("sggu consult route returns local LLM answer and sends context to Ollama chat", async () => {
   const restoreEnv = setKnownLocalLlmEnv();
   const seenRequests = [];
@@ -220,6 +242,43 @@ test("sggu consult route returns local LLM answer and sends context to Ollama ch
     assert.match(seenRequests[0].body.messages.at(-1).content, /"characterName": "붐버"/);
     assert.match(seenRequests[0].body.messages.at(-1).content, /"topSpecUps"/);
     assert.match(seenRequests[0].body.messages.at(-1).content, /뭐부터 올릴까\?/);
+  } finally {
+    restoreFetch();
+    restoreEnv();
+  }
+});
+
+test("sggu consult route accepts compact context without raw armory", async () => {
+  const restoreEnv = setKnownLocalLlmEnv();
+  const seenRequests = [];
+
+  const restoreFetch = setFetchMock(async (_url, options = {}) => {
+    seenRequests.push(JSON.parse(options.body || "{}"));
+
+    return jsonResponse({
+      message: { role: "assistant", content: "무기 강화부터 봐." }
+    });
+  });
+
+  try {
+    const response = await consultSggu(createConsultRequest({
+      message: "뭐부터 올릴까?",
+      conversation: [{ role: "sggu", content: "후보를 볼게." }],
+      context: {
+        profile: {
+          characterName: "붐버",
+          className: "스카우터"
+        },
+        topSpecUps: [{ label: "무기 11->12", gainPercent: 0.3 }]
+      }
+    }));
+    const data = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(data.Answer, "무기 강화부터 봐.");
+    assert.equal(seenRequests.length, 1);
+    assert.match(seenRequests[0].messages.at(-1).content, /"characterName": "붐버"/);
+    assert.match(seenRequests[0].messages.at(-1).content, /"label": "무기 11->12"/);
   } finally {
     restoreFetch();
     restoreEnv();
