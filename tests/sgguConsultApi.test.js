@@ -12,7 +12,10 @@ registerHooks({
   }
 });
 
-const { POST: consultSggu } = await import("../app/api/consult/sggu/route.js");
+const {
+  POST: consultSggu,
+  buildSgguConsultMessagesForRequest
+} = await import("../app/api/consult/sggu/route.js");
 
 const LOCAL_LLM_ENV_KEYS = [
   "LOCAL_LLM_PROVIDER",
@@ -92,6 +95,48 @@ function setFetchMock(fetchImpl) {
 
   return () => restoreFetchDescriptor(previousFetchDescriptor);
 }
+
+test("builds consult messages with retrieved references", async () => {
+  const messages = await buildSgguConsultMessagesForRequest({
+    body: {
+      message: "이번 주 없데이트야?",
+      context: {
+        profile: { characterName: "붐버", className: "스카우터" }
+      }
+    },
+    retrieveReferences: async () => [
+      {
+        title: "5월 27일(수) 업데이트 내역 안내",
+        publishedAt: "2026-05-27",
+        category: "patch-note",
+        changeType: "no-update",
+        sectionTitle: "오류 수정",
+        sourceUrl: "https://lostark.game.onstove.com/News/Notice/27",
+        text: "단순 오류 수정 중심의 없데이트다."
+      }
+    ]
+  });
+
+  assert.match(messages.at(-1).content, /\[참고 문서\]/);
+  assert.match(messages.at(-1).content, /단순 오류 수정 중심/);
+});
+
+test("builds consult messages without references when retrieval throws", async () => {
+  const messages = await buildSgguConsultMessagesForRequest({
+    body: {
+      message: "뭐부터 올려?",
+      context: {
+        profile: { characterName: "붐버", className: "스카우터" }
+      }
+    },
+    retrieveReferences: async () => {
+      throw new Error("retriever failed");
+    }
+  });
+
+  assert.doesNotMatch(messages.at(-1).content, /\[참고 문서\]/);
+  assert.match(messages.at(-1).content, /"characterName": "붐버"/);
+});
 
 test("sggu consult route returns INVALID_MESSAGE for an empty message", async () => {
   const restoreEnv = setKnownLocalLlmEnv();

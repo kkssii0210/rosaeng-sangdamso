@@ -6,6 +6,7 @@ import {
 } from "../../../../lib/consultant/sgguContext.js";
 import { buildSgguChatMessages } from "../../../../lib/consultant/sgguPrompt.js";
 import { createLocalLlmClient, LocalLlmError } from "../../../../lib/llm/localLlmClient.js";
+import { retrieveSgguReferences } from "../../../../lib/rag/retriever.js";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,36 @@ function errorResponse(code, message, status) {
   return NextResponse.json({ code, message }, { status });
 }
 
+function contextFromBody(body) {
+  return body?.context && typeof body.context === "object"
+    ? body.context
+    : buildSgguConsultantContext({
+      armory: body?.armory,
+      specUpRecommendation: body?.specUpRecommendation
+    });
+}
+
+async function safeRetrieveReferences({ message, context, retrieveReferences }) {
+  try {
+    return await retrieveReferences({ message, context });
+  } catch (error) {
+    console.warn("Sggu RAG retrieval failed", error);
+    return [];
+  }
+}
+
+export async function buildSgguConsultMessagesForRequest({
+  body,
+  retrieveReferences = retrieveSgguReferences
+} = {}) {
+  const message = sanitizeConsultMessage(body?.message);
+  const context = contextFromBody(body);
+  const conversation = normalizeConsultConversation(body?.conversation);
+  const references = await safeRetrieveReferences({ message, context, retrieveReferences });
+
+  return buildSgguChatMessages({ message, conversation, context, references });
+}
+
 export async function POST(request) {
   const body = await readJsonBody(request);
   const message = sanitizeConsultMessage(body?.message);
@@ -40,12 +71,7 @@ export async function POST(request) {
     );
   }
 
-  const context = body?.context && typeof body.context === "object"
-    ? body.context
-    : buildSgguConsultantContext({
-      armory: body?.armory,
-      specUpRecommendation: body?.specUpRecommendation
-    });
+  const context = contextFromBody(body);
 
   if (!String(context?.profile?.characterName || "").trim()) {
     return errorResponse(
@@ -55,8 +81,7 @@ export async function POST(request) {
     );
   }
 
-  const conversation = normalizeConsultConversation(body?.conversation);
-  const messages = buildSgguChatMessages({ message, conversation, context });
+  const messages = await buildSgguConsultMessagesForRequest({ body });
 
   try {
     const client = createLocalLlmClient();
