@@ -33,6 +33,21 @@ test("extracts only update notice entries from official notice list html", () =>
   ]);
 });
 
+test("skips off-origin and wrong-path update notice anchors", () => {
+  const entries = extractNoticeEntries(`
+    <a href="https://example.com/News/Notice/Views/13001">5월 27일(수) 업데이트 내역 안내</a>
+    <a href="/News/Event/Views/13002">5월 20일(수) 업데이트 내역 안내</a>
+    <a href="/News/Notice/Views/13003">5월 13일(수) 업데이트 내역 안내</a>
+  `);
+
+  assert.deepEqual(entries, [
+    {
+      title: "5월 13일(수) 업데이트 내역 안내",
+      sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13003"
+    }
+  ]);
+});
+
 test("classifies bug-fix-only notes as no-update", () => {
   assert.equal(
     classifyPatchNoteChange("일부 퀘스트 진행 오류를 수정하였습니다. 알려진 문제를 수정하였습니다.").changeType,
@@ -45,6 +60,25 @@ test("classifies bug-fix-only notes as no-update", () => {
   assert.equal(
     classifyPatchNoteChange("이벤트 보상과 UI 편의성이 개선됩니다.").changeType,
     "minor"
+  );
+});
+
+test("classifies broad-term bug fixes as no-update", () => {
+  assert.equal(
+    classifyPatchNoteChange("클래스 스킬 오류를 수정하였습니다.").changeType,
+    "no-update"
+  );
+  assert.equal(
+    classifyPatchNoteChange("UI 오류 현상이 수정되었습니다.").changeType,
+    "no-update"
+  );
+  assert.equal(
+    classifyPatchNoteChange("신규 레이드 추가").changeType,
+    "major"
+  );
+  assert.equal(
+    classifyPatchNoteChange("클래스 밸런스 조정").changeType,
+    "major"
   );
 });
 
@@ -114,6 +148,22 @@ test("uses Korean title date for inbox file slug", async () => {
   assert.equal(path.basename(result.filePath), "2026-05-27-update.md");
 });
 
+test("uses published year for Korean title date slug", async () => {
+  const rootDir = await tempRoot();
+  const result = await writeFetchedPatchNote({
+    rootDir,
+    note: {
+      title: "1월 3일(수) 업데이트 내역 안내",
+      sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/14001",
+      publishedAt: "2027-01-03",
+      fetchedAt: "2027-01-03T01:15:00.000Z",
+      body: "일부 오류를 수정하였습니다."
+    }
+  });
+
+  assert.equal(path.basename(result.filePath), "2027-01-03-update.md");
+});
+
 test("matches existing unquoted source url frontmatter", async () => {
   const rootDir = await tempRoot();
   await mkdir(path.join(rootDir, "data/rag/approved/patch-notes"), { recursive: true });
@@ -145,6 +195,41 @@ summary: "기존 승인본"
 
   assert.equal(result.action, "revision");
   assert.equal(path.basename(result.filePath), "2026-05-27-update-revision.md");
+});
+
+test("does not skip when matching source hash appears only in body", async () => {
+  const rootDir = await tempRoot();
+  const note = {
+    title: "5월 27일(수) 업데이트 내역 안내",
+    sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001",
+    publishedAt: "2026-05-27",
+    fetchedAt: "2026-05-27T02:00:00.000Z",
+    body: "일부 오류를 수정하였습니다."
+  };
+  const sourceHash = patchNoteToMarkdown(note).match(/sourceHash: "(sha256:[^"]+)"/)?.[1];
+
+  await mkdir(path.join(rootDir, "data/rag/inbox/patch-notes"), { recursive: true });
+  await writeFile(path.join(rootDir, "data/rag/inbox/patch-notes/2026-05-27-update.md"), `---
+title: "5월 27일(수) 업데이트 내역 안내"
+sourceUrl: "https://lostark.game.onstove.com/News/Notice/Views/13001"
+publishedAt: "2026-05-27"
+fetchedAt: "2026-05-27T01:15:00.000Z"
+sourceHash: "sha256:old"
+status: inbox
+category: patch-note
+changeType: no-update
+summary: "기존 인박스"
+---
+
+본문에 sourceHash: "${sourceHash}" 문자열이 있습니다.
+`, "utf8");
+
+  const result = await writeFetchedPatchNote({
+    rootDir,
+    note
+  });
+
+  assert.equal(result.action, "written");
 });
 
 test("writes revision inbox file when approved source url changes", async () => {
