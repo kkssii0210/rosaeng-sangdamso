@@ -1,0 +1,39 @@
+name: Fetch RAG Patch Notes
+
+on:
+  schedule:
+    - cron: "15 1 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run rag:fetch
+
+      - name: Create patch-note review PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: rag-fetch/${{ github.run_id }}
+          title: "docs: fetch Lost Ark patch notes"
+          commit-message: "docs: fetch Lost Ark patch notes"
+          body: |
+            Automated Lost Ark patch-note fetch.
+
+            Review files in `data/rag/inbox/patch-notes/`.
+            If valid, move approved files to `data/rag/approved/patch-notes/` and change `status` to `approved`.
+          add-paths: |
+            data/rag/inbox/patch-notes/**
