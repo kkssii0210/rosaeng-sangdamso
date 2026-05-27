@@ -291,6 +291,40 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - 상담 요청 payload는 현재 raw armory를 포함하므로, 이후 서버 세션 또는 compact context 전송으로 줄일 수 있다.
 - 경매장/거래소 가격 후보가 너무 적거나 API 응답이 비어 있을 때 사용자에게 후보 제외 사유를 더 자세히 보여줄 수 있다.
 
+## 2026-05-27
+
+### 목표
+
+- 슥구 상담에 승인된 로스트아크 패치노트, 용어, 계산식 문서를 참고하는 로컬 RAG 흐름을 붙인다.
+- 매주 수요일 10:15 KST에 공식 로스트아크 업데이트 공지를 자동 수집하되, 사람이 확인한 문서만 상담에 쓰게 한다.
+- 단순 오류 수정 위주의 패치는 `no-update`로 분류해 없데이트 안내 근거로 활용할 수 있게 한다.
+
+### 변경
+
+- `lib/rag/ragDocuments.js`를 추가해 `data/rag/approved/**/*.md`만 읽고, frontmatter 검증과 heading 기반 chunk 생성을 하게 했다.
+- `lib/rag/retriever.js`를 추가해 패치노트, 용어, 계산식 문서를 keyword scoring으로 찾아 슥구 prompt reference로 넘기게 했다.
+- `lib/consultant/sgguPrompt.js`와 `app/api/consult/sggu/route.js`에 `[참고 문서]` 주입과 retrieval 실패 fallback을 연결했다.
+- `lib/rag/lostarkPatchNotes.js`와 `scripts/fetch-lostark-patch-notes.mjs`를 추가해 공식 공지 목록에서 `업데이트 내역 안내`만 수집하고 inbox Markdown으로 저장하게 했다.
+- `.github/workflows/fetch-rag-patch-notes.yml`를 추가해 매주 수요일 01:15 UTC, 즉 10:15 KST에 fetch 후 `data/rag/inbox/patch-notes/**` PR을 만들게 했다.
+- 크롤러는 공식 도메인과 `/News/Notice/Views/` 경로만 허용하고, 같은 URL/hash 중복은 skip, 같은 URL 변경분은 revision으로 보존한다.
+- 같은 날짜 slug의 다른 공지가 기존 inbox 파일을 덮어쓰지 않도록 unique path와 exclusive write를 적용했다.
+- 승인 seed 문서로 아크 패시브 용어와 전투력 계산 기준을 추가했다.
+
+### 검증
+
+- `npm test -- tests/ragDocuments.test.js tests/ragRetriever.test.js tests/lostarkPatchNotesCrawler.test.js tests/sgguPrompt.test.js tests/sgguConsultApi.test.js tests/fetchLostarkPatchNotesScript.test.js`
+- `node --check scripts/fetch-lostark-patch-notes.mjs`
+- `npm test`
+- `npm run lint`
+- `npm run build`
+- `SGGU_CONSULT_BASE_URL=http://127.0.0.1:3001 npm run smoke:sggu`
+
+### 다음 작업
+
+- GitHub Actions가 실제 수요일 실행에서 공식 페이지 HTML을 안정적으로 파싱하는지 첫 PR 결과를 확인한다.
+- 사람이 승인할 때 inbox 문서를 approved로 옮기는 운영 절차를 README나 짧은 runbook으로 정리한다.
+- 실제 approved 패치노트가 쌓이면 retriever scoring이 불필요한 문서를 과하게 붙이지 않는지 상담 품질을 점검한다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
