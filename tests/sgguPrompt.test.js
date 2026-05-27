@@ -97,6 +97,7 @@ test("adds approved reference snippets to local chat messages", () => {
 
   assert.match(messages[0].content, /참고 문서/);
   assert.match(messages.at(-1).content, /\[참고 문서\]/);
+  assert.match(messages.at(-1).content, /\[참고 문서\]\n5월 27일\(수\) 업데이트 내역 안내\npublishedAt:/);
   assert.match(messages.at(-1).content, /changeType: no-update/);
   assert.match(messages.at(-1).content, /일부 퀘스트 진행 오류/);
 });
