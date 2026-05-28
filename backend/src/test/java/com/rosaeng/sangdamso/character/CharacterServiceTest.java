@@ -31,13 +31,13 @@ class CharacterServiceTest {
                 equipmentItem("무기", "검은 밤의 장검", "고대", tooltip(97, "기본 효과", "무기 공격력 +12345")),
                 equipmentItem("보주", "눈부신 비전의 보주", "유물", tooltip(-1, "특수 효과", "[맥스웰 맥시마]", "시즌2 달성 최대 낙원력 : 48,275,714"))
             ),
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/avatars", node("avatars"),
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/avatars", avatars(),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkpassive", node("arkPassive"),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkgrid", node("arkGrid"),
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/cards", node("cards"),
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/cards", cards(),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/combat-skills", node("skills"),
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/engravings", node("engravings"),
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/gems", node("gems")
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/engravings", engravings(),
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/gems", gems()
         ));
 
         CharacterResponse response = service.findCharacter("도화가");
@@ -48,13 +48,14 @@ class CharacterServiceTest {
         assertThat(response.equipment().get(0).get("Tooltip")).isNull();
         assertThat(response.paradiseOrb().get("Type").asString()).isEqualTo("보주");
         assertThat(response.paradiseOrb().get("EffectName").asString()).isEqualTo("맥스웰 맥시마");
-        assertThat(response.avatars().get("source").asString()).isEqualTo("avatars");
+        assertThat(response.avatars().get(0).get("StatEffects").get(0).get("Stat").asString()).isEqualTo("민첩");
         assertThat(response.arkPassive().get("source").asString()).isEqualTo("arkPassive");
         assertThat(response.arkGrid().get("source").asString()).isEqualTo("arkGrid");
-        assertThat(response.cards().get("source").asString()).isEqualTo("cards");
+        assertThat(response.cards().get("AwakeTotal").asInt()).isEqualTo(3);
+        assertThat(response.cards().get("ActiveEffects").get(0).get("Kind").asString()).isEqualTo("damageReduction");
         assertThat(response.skills().get("source").asString()).isEqualTo("skills");
-        assertThat(response.engravings().get("source").asString()).isEqualTo("engravings");
-        assertThat(response.gems().get("source").asString()).isEqualTo("gems");
+        assertThat(response.engravings().get(0).get("EfficiencyText").asString()).isEqualTo("20.00%");
+        assertThat(response.gems().get(0).get("SkillName").asString()).isEqualTo("글러트니");
         assertThat(response.classIdentityEffects()).isNull();
         assertThat(response.criticalStats()).isNull();
         assertThat(response.combatPowerAnalysis()).isNull();
@@ -217,6 +218,59 @@ class CharacterServiceTest {
         return objectMapper.convertValue(item, JsonNode.class);
     }
 
+    private JsonNode avatars() {
+        return objectMapper.convertValue(List.of(Map.of(
+            "Type", "무기 아바타",
+            "Name", "탐식하는 도약의 데스사이드",
+            "Icon", "https://cdn-lostark.game.onstove.com/sample-avatar.png",
+            "Grade", "전설",
+            "IsInner", true,
+            "IsSet", false,
+            "Tooltip", avatarTooltip("민첩 +2.00%")
+        )), JsonNode.class);
+    }
+
+    private JsonNode cards() {
+        return objectMapper.convertValue(Map.of(
+            "Cards", List.of(Map.of(
+                "Slot", 0,
+                "Name", "유적을 찾은 카단",
+                "Icon", "https://cdn-lostark.game.onstove.com/card.png",
+                "AwakeCount", 3,
+                "AwakeTotal", 5,
+                "Grade", "전설"
+            )),
+            "Effects", List.of(Map.of(
+                "Index", 0,
+                "CardSlots", List.of(0),
+                "Items", List.of(Map.of("Name", "굳센 대지의 숨결 2세트", "Description", "뇌속성 피해 감소 +10.00%"))
+            ))
+        ), JsonNode.class);
+    }
+
+    private JsonNode engravings() {
+        return objectMapper.convertValue(Map.of(
+            "ArkPassiveEffects", List.of(Map.of(
+                "AbilityStoneLevel", 1,
+                "Grade", "유물",
+                "Level", 4,
+                "Name", "저주받은 인형",
+                "Description", "적에게 주는 피해가 <FONT COLOR='#99ff99'>20.00%</FONT> 증가한다."
+            ))
+        ), JsonNode.class);
+    }
+
+    private JsonNode gems() {
+        return objectMapper.convertValue(Map.of("Gems", List.of(Map.of(
+            "Slot", 0,
+            "Name", "<P ALIGN='CENTER'><FONT COLOR='#E3C7A1'>10레벨 광휘의 보석</FONT></P>",
+            "Icon", "https://cdn-lostark.game.onstove.com/sample-gem.png",
+            "Level", 10,
+            "Grade", "고대",
+            "Tooltip", gemTooltip("글러트니", "피해", "44.00", "증가")
+        ))), JsonNode.class);
+    }
+
     private String tooltip(int qualityValue, String title, String... lines) {
         return """
             {
@@ -235,6 +289,35 @@ class CharacterServiceTest {
               }
             }
             """.formatted(qualityValue, title, String.join("<BR>", lines));
+    }
+
+    private String avatarTooltip(String statLine) {
+        return """
+            {
+              "AvatarAttribute": { "IsInner": true, "IsSet": false },
+              "Element_005": {
+                "type": "ItemPartBox",
+                "value": {
+                  "Element_000": "<FONT COLOR='#A9D0F5'>기본 효과</FONT>",
+                  "Element_001": "%s"
+                }
+              }
+            }
+            """.formatted(statLine);
+    }
+
+    private String gemTooltip(String skillName, String effectType, String value, String direction) {
+        return """
+            {
+              "Element_006": {
+                "type": "ItemPartBox",
+                "value": {
+                  "Element_000": "<FONT COLOR='#A9D0F5'>효과</FONT>",
+                  "Element_001": "[소울이터] <FONT COLOR='#FFD200'>%s</FONT> %s %s%% %s<BR>기본 공격력 1.20%% 증가"
+                }
+              }
+            }
+            """.formatted(skillName, effectType, value, direction);
     }
 
     private static void awaitAllOptionalRequests(CountDownLatch latch) {

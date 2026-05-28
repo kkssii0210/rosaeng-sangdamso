@@ -2,8 +2,12 @@ package com.rosaeng.sangdamso.character;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.rosaeng.sangdamso.character.avatar.AvatarNormalizer;
+import com.rosaeng.sangdamso.character.cards.CardsNormalizer;
+import com.rosaeng.sangdamso.character.engraving.EngravingsNormalizer;
 import com.rosaeng.sangdamso.common.BffException;
 import com.rosaeng.sangdamso.character.equipment.EquipmentNormalizer;
+import com.rosaeng.sangdamso.character.gems.GemsNormalizer;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
@@ -22,7 +26,11 @@ public class CharacterService {
     private static final String ARMORY_CHARACTER_PATH = "/armories/characters/";
 
     private final LostarkApiClient lostarkApiClient;
+    private final AvatarNormalizer avatarNormalizer = new AvatarNormalizer();
+    private final CardsNormalizer cardsNormalizer = new CardsNormalizer();
+    private final EngravingsNormalizer engravingsNormalizer = new EngravingsNormalizer();
     private final EquipmentNormalizer equipmentNormalizer = new EquipmentNormalizer();
+    private final GemsNormalizer gemsNormalizer = new GemsNormalizer();
 
     public CharacterService(LostarkApiClient lostarkApiClient) {
         this.lostarkApiClient = lostarkApiClient;
@@ -44,18 +52,22 @@ public class CharacterService {
             Future<JsonNode> engravings = executor.submit(() -> fetchOptional(ArmorySection.ENGRAVINGS.path(basePath)));
             Future<JsonNode> gems = executor.submit(() -> fetchOptional(ArmorySection.GEMS.path(basePath)));
             JsonNode rawEquipment = await(equipment);
+            JsonNode rawAvatars = await(avatars);
+            JsonNode rawCards = await(cards);
+            JsonNode rawEngravings = await(engravings);
+            JsonNode rawGems = await(gems);
 
             return new CharacterResponse(
                 profile,
                 equipmentNormalizer.normalize(rawEquipment),
                 equipmentNormalizer.extractParadiseOrb(rawEquipment),
-                await(avatars),
+                avatarNormalizer.normalize(rawAvatars),
                 await(arkPassive),
                 await(arkGrid),
-                await(cards),
+                cardsNormalizer.normalize(rawCards),
                 await(skills),
-                await(engravings),
-                await(gems),
+                engravingsNormalizer.normalize(rawEngravings),
+                gemsNormalizer.normalize(rawGems),
                 null,
                 null,
                 null,
