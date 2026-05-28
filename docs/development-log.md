@@ -323,6 +323,11 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - Spring Boot 이관 설계를 기준으로 구현 계획을 작성한다.
 - 1단계부터 6단계까지 각 단계마다 계약 테스트, backend 테스트, frontend 빌드 검증을 통과시키며 진행한다.
 
+### 진행
+
+- `spring-boot-migration` worktree를 생성해 Spring Boot 이관 작업을 격리했다.
+- API endpoint별 active owner를 기록하는 `docs/backend-api-ownership.md`를 추가했다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
