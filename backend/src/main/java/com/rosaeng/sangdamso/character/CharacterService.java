@@ -33,14 +33,14 @@ public class CharacterService {
         JsonNode profile = fetchRequiredProfile(basePath + "/profiles");
 
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            Future<JsonNode> equipment = executor.submit(() -> fetchOptional(basePath + "/equipment"));
-            Future<JsonNode> avatars = executor.submit(() -> fetchOptional(basePath + "/avatars"));
-            Future<JsonNode> arkPassive = executor.submit(() -> fetchOptional(basePath + "/arkpassive"));
-            Future<JsonNode> arkGrid = executor.submit(() -> fetchOptional(basePath + "/arkgrid"));
-            Future<JsonNode> cards = executor.submit(() -> fetchOptional(basePath + "/cards"));
-            Future<JsonNode> skills = executor.submit(() -> fetchOptional(basePath + "/combat-skills"));
-            Future<JsonNode> engravings = executor.submit(() -> fetchOptional(basePath + "/engravings"));
-            Future<JsonNode> gems = executor.submit(() -> fetchOptional(basePath + "/gems"));
+            Future<JsonNode> equipment = executor.submit(() -> fetchOptional(ArmorySection.EQUIPMENT.path(basePath)));
+            Future<JsonNode> avatars = executor.submit(() -> fetchOptional(ArmorySection.AVATARS.path(basePath)));
+            Future<JsonNode> arkPassive = executor.submit(() -> fetchOptional(ArmorySection.ARK_PASSIVE.path(basePath)));
+            Future<JsonNode> arkGrid = executor.submit(() -> fetchOptional(ArmorySection.ARK_GRID.path(basePath)));
+            Future<JsonNode> cards = executor.submit(() -> fetchOptional(ArmorySection.CARDS.path(basePath)));
+            Future<JsonNode> skills = executor.submit(() -> fetchOptional(ArmorySection.SKILLS.path(basePath)));
+            Future<JsonNode> engravings = executor.submit(() -> fetchOptional(ArmorySection.ENGRAVINGS.path(basePath)));
+            Future<JsonNode> gems = executor.submit(() -> fetchOptional(ArmorySection.GEMS.path(basePath)));
 
             return new CharacterResponse(
                 profile,
