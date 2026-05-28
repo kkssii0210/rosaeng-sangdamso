@@ -8,6 +8,7 @@ import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
 import com.rosaeng.sangdamso.lostark.LostarkProperties;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,7 +27,10 @@ class CharacterServiceTest {
     void returnsSuccessfulTopLevelFields() {
         CharacterService service = serviceWithResponses(Map.of(
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/profiles", node("profile"),
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/equipment", node("equipment"),
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/equipment", equipment(
+                equipmentItem("무기", "검은 밤의 장검", "고대", tooltip(97, "기본 효과", "무기 공격력 +12345")),
+                equipmentItem("보주", "눈부신 비전의 보주", "유물", tooltip(-1, "특수 효과", "[맥스웰 맥시마]", "시즌2 달성 최대 낙원력 : 48,275,714"))
+            ),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/avatars", node("avatars"),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkpassive", node("arkPassive"),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkgrid", node("arkGrid"),
@@ -39,8 +43,11 @@ class CharacterServiceTest {
         CharacterResponse response = service.findCharacter("도화가");
 
         assertThat(response.profile().get("source").asString()).isEqualTo("profile");
-        assertThat(response.equipment().get("source").asString()).isEqualTo("equipment");
-        assertThat(response.paradiseOrb()).isNull();
+        assertThat(response.equipment().size()).isEqualTo(1);
+        assertThat(response.equipment().get(0).get("Type").asString()).isEqualTo("무기");
+        assertThat(response.equipment().get(0).get("Tooltip")).isNull();
+        assertThat(response.paradiseOrb().get("Type").asString()).isEqualTo("보주");
+        assertThat(response.paradiseOrb().get("EffectName").asString()).isEqualTo("맥스웰 맥시마");
         assertThat(response.avatars().get("source").asString()).isEqualTo("avatars");
         assertThat(response.arkPassive().get("source").asString()).isEqualTo("arkPassive");
         assertThat(response.arkGrid().get("source").asString()).isEqualTo("arkGrid");
@@ -131,7 +138,7 @@ class CharacterServiceTest {
     }
 
     @Test
-    void mapsOptionalNotFoundToNull() {
+    void mapsOptionalEquipmentNotFoundToEmptyArray() {
         CharacterService service = new CharacterService(client((method, path, authorization) -> {
             if (path.endsWith("/equipment")) {
                 throw new LostarkApiException(LostarkApiErrorCode.NOT_FOUND, 404, "missing");
@@ -143,7 +150,8 @@ class CharacterServiceTest {
         CharacterResponse response = service.findCharacter("도화가");
 
         assertThat(response.profile()).isNotNull();
-        assertThat(response.equipment()).isNull();
+        assertThat(response.equipment().size()).isZero();
+        assertThat(response.paradiseOrb()).isNull();
         assertThat(response.avatars()).isNotNull();
     }
 
@@ -193,6 +201,40 @@ class CharacterServiceTest {
 
     private JsonNode node(String source) {
         return objectMapper.createObjectNode().put("source", source);
+    }
+
+    private JsonNode equipment(JsonNode... items) {
+        return objectMapper.convertValue(List.of(items), JsonNode.class);
+    }
+
+    private JsonNode equipmentItem(String type, String name, String grade, String tooltip) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("Type", type);
+        item.put("Name", name);
+        item.put("Icon", "https://cdn-lostark.game.onstove.com/sample.png");
+        item.put("Grade", grade);
+        item.put("Tooltip", tooltip);
+        return objectMapper.convertValue(item, JsonNode.class);
+    }
+
+    private String tooltip(int qualityValue, String title, String... lines) {
+        return """
+            {
+              "Element_001": {
+                "value": {
+                  "qualityValue": %d,
+                  "leftStr2": "<FONT COLOR='#FFD200'>아이템 레벨 1,740.00</FONT>"
+                }
+              },
+              "Element_010": {
+                "type": "ItemPartBox",
+                "value": {
+                  "Element_000": "<FONT COLOR='#FFEC50'>%s</FONT>",
+                  "Element_001": "%s"
+                }
+              }
+            }
+            """.formatted(qualityValue, title, String.join("<BR>", lines));
     }
 
     private static void awaitAllOptionalRequests(CountDownLatch latch) {

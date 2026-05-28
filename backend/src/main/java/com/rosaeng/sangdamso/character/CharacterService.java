@@ -3,6 +3,7 @@ package com.rosaeng.sangdamso.character;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.rosaeng.sangdamso.common.BffException;
+import com.rosaeng.sangdamso.character.equipment.EquipmentNormalizer;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
@@ -21,6 +22,7 @@ public class CharacterService {
     private static final String ARMORY_CHARACTER_PATH = "/armories/characters/";
 
     private final LostarkApiClient lostarkApiClient;
+    private final EquipmentNormalizer equipmentNormalizer = new EquipmentNormalizer();
 
     public CharacterService(LostarkApiClient lostarkApiClient) {
         this.lostarkApiClient = lostarkApiClient;
@@ -41,11 +43,12 @@ public class CharacterService {
             Future<JsonNode> skills = executor.submit(() -> fetchOptional(ArmorySection.SKILLS.path(basePath)));
             Future<JsonNode> engravings = executor.submit(() -> fetchOptional(ArmorySection.ENGRAVINGS.path(basePath)));
             Future<JsonNode> gems = executor.submit(() -> fetchOptional(ArmorySection.GEMS.path(basePath)));
+            JsonNode rawEquipment = await(equipment);
 
             return new CharacterResponse(
                 profile,
-                await(equipment),
-                null,
+                equipmentNormalizer.normalize(rawEquipment),
+                equipmentNormalizer.extractParadiseOrb(rawEquipment),
                 await(avatars),
                 await(arkPassive),
                 await(arkGrid),
