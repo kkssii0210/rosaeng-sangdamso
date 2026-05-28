@@ -6,7 +6,7 @@ Date: 2026-05-29
 | --- | --- | --- | --- |
 | `/api/characters/{name}` | Spring Boot | Spring Boot | Spring owner active; combat/upgrade summaries are partial |
 | `/api/market/snapshot` | Spring Boot | Spring Boot | Spring owner active |
-| `/api/consult/sggu` | Next.js | Spring Boot | Not started |
+| `/api/consult/sggu` | Spring Boot | Spring Boot | Spring owner active |
 
 Rules:
 
