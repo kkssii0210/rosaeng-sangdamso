@@ -2,7 +2,7 @@ import AvatarSummaryPanel from "./AvatarSummaryPanel.jsx";
 import EngravingsPanel from "./EngravingsPanel.jsx";
 import EquipmentList from "./EquipmentList.jsx";
 import GemsPanel from "./GemsPanel.jsx";
-import { buildMainStatSummary } from "../lib/spec/mainStats.js";
+import { buildMainStatSummary } from "../lib/ui/mainStats.js";
 
 export default function EquipmentPage({ equipment, engravings, gems, profile, avatars, criticalStats }) {
   const equipmentSpecContext = {

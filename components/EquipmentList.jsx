@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { buildAccessoryContributionIndex, formatContributionPercent, isAccessoryType } from "../lib/spec/accessoryContributions.js";
+import { buildAccessoryContributionIndex, formatContributionPercent, isAccessoryType } from "../lib/ui/accessoryContributions.js";
 import { formatNumber, gradeClass, listOf, qualityClass, stripMarkup, valueOf } from "./armoryUtils.js";
 
 export default function EquipmentList({ equipment, profile, criticalStats }) {

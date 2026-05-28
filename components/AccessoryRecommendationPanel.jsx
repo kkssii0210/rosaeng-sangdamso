@@ -1,5 +1,5 @@
 import { formatNumber, valueOf } from "./armoryUtils.js";
-import { buildAccessoryDisplay } from "../lib/spec/accessoryDisplay.js";
+import { buildAccessoryDisplay } from "../lib/ui/accessoryDisplay.js";
 
 function formatGold(value) {
   const number = Number(value);

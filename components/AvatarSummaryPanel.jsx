@@ -1,4 +1,4 @@
-import { buildAvatarStatSummary, formatAvatarStatPercent } from "../lib/spec/avatarStats.js";
+import { buildAvatarStatSummary, formatAvatarStatPercent } from "../lib/ui/avatarStats.js";
 
 export default function AvatarSummaryPanel({ avatars }) {
   const summary = buildAvatarStatSummary(avatars);

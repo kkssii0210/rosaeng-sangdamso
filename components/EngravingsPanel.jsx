@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { buildEngravingContributionIndex } from "../lib/spec/engravingContributions.js";
+import { buildEngravingContributionIndex } from "../lib/ui/engravingContributions.js";
 import { listOf, valueOf } from "./armoryUtils.js";
 
 function gradeClass(grade) {
