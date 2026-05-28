@@ -327,6 +327,12 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 
 - `spring-boot-migration` worktree를 생성해 Spring Boot 이관 작업을 격리했다.
 - API endpoint별 active owner를 기록하는 `docs/backend-api-ownership.md`를 추가했다.
+- Spring Boot character response top-level 계약을 `CharacterContractTest`로 고정했다.
+- Next.js rewrite를 `SPRING_API_PATHS` 기반 opt-in 방식으로 추가해 endpoint 단위 strangler 전환이 가능해졌다.
+- Spring Boot character 조회에서 장비, 낙원 보주, 아바타, 카드, 각인, 보석 정규화를 수행한다.
+- class identity와 critical stats 계산을 Java service로 옮기고 character response에 연결했다.
+- combat power와 upgrade efficiency는 Spring 응답 구조를 채우되, 현재는 공식 전투력/낙원력/critical summary 중심의 partial 분석과 market snapshot 전 unavailable 후보 상태로 둔다.
+- Phase 2 범위 backend 검증은 `cd backend && ./mvnw test` 기준 45개 테스트 통과까지 확인했다.
 
 ## 앞으로의 기록 방식
 
