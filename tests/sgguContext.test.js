@@ -4,7 +4,7 @@ import {
   buildSgguConsultantContext,
   normalizeConsultConversation,
   sanitizeConsultMessage
-} from "../lib/consultant/sgguContext.js";
+} from "../lib/ui/sgguContext.js";
 
 test("sanitizes consult message with max length", () => {
   assert.equal(sanitizeConsultMessage("  무기 먼저야?  "), "무기 먼저야?");

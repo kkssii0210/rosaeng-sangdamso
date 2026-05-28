@@ -333,6 +333,13 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - class identity와 critical stats 계산을 Java service로 옮기고 character response에 연결했다.
 - combat power와 upgrade efficiency는 Spring 응답 구조를 채우되, 현재는 공식 전투력/낙원력/critical summary 중심의 partial 분석과 market snapshot 전 unavailable 후보 상태로 둔다.
 - Phase 2 범위 backend 검증은 `cd backend && ./mvnw test` 기준 45개 테스트 통과까지 확인했다.
+- Spring Boot에 market snapshot API와 5분 TTL cache를 추가하고 `/api/market/snapshot` active owner를 Spring Boot로 전환했다.
+- `/api/characters/{name}` active owner를 Spring Boot로 전환하고 기존 Next.js character route를 제거했다.
+- Spring Boot에 `/api/consult/sggu` 상담 API, compact context builder, prompt builder, Ollama local LLM client를 추가했다.
+- `/api/consult/sggu` active owner를 Spring Boot로 전환하고 기존 Next.js consult route와 JS route 테스트를 제거했다.
+- Next.js에는 이관 대상 API Route가 남아 있지 않고, `/api/efficiency/*`는 아직 Next.js 소유의 별도 기능으로 유지한다.
+- JS 상담 prompt/local LLM backend module은 제거했고, 브라우저에서 compact context를 만들기 위한 `sgguContext`만 `lib/ui`로 이동했다.
+- 최종 검증은 `npm test` 24개, `npm run lint`, `npm run build`, `cd backend && ./mvnw test` 58개, `git diff --check` 통과까지 확인했다.
 
 ## 앞으로의 기록 방식
 

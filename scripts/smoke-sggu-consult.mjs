@@ -1,4 +1,4 @@
-import { buildSgguConsultantContext } from "../lib/consultant/sgguContext.js";
+import { buildSgguConsultantContext } from "../lib/ui/sgguContext.js";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:3000";
 const DEFAULT_MESSAGE = "지금 뭐부터 올릴까?";
