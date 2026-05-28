@@ -291,6 +291,38 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - 상담 요청 payload는 현재 raw armory를 포함하므로, 이후 서버 세션 또는 compact context 전송으로 줄일 수 있다.
 - 경매장/거래소 가격 후보가 너무 적거나 API 응답이 비어 있을 때 사용자에게 후보 제외 사유를 더 자세히 보여줄 수 있다.
 
+## 2026-05-29
+
+### 목표
+
+- 로생상담소의 장기 backend 방향을 Spring Boot 중심 BFF로 확정한다.
+- Next.js API Route에 커지고 있는 Lostark API 호출, 인증, 캐시, 계산, 상담 책임을 단계적으로 Spring Boot로 옮기는 이관 계획을 세운다.
+
+### 결정
+
+- 최종 구조는 Spring Boot가 backend BFF를 담당하고, Next.js는 UI와 정적 frontend 경험에 집중한다.
+- Lostark Open API 인증, timeout, retry, 에러 매핑, 캐시, market snapshot, 도메인 정규화, 전투력/효율 계산, 상담/RAG API는 단계적으로 Spring Boot로 이동한다.
+- 기존 JavaScript 계산 로직은 정확도 검증 자산이 많으므로 한 번에 옮기지 않는다. 단계별 parity test와 fixture 기반 회귀 테스트로 Java 구현을 검증한다.
+- 전환 방식은 big-bang rewrite가 아니라 strangler 방식이다. Spring endpoint가 기존 Next API 응답과 동등해진 뒤 frontend routing을 Spring 쪽으로 넘기고, 마지막에 Next API Route를 제거한다.
+
+### 이관 계획
+
+1. API 계약과 routing 기반을 고정한다.
+2. 캐릭터 조회 endpoint를 Spring Boot에서 기존 Next 응답과 동일한 수준으로 완성한다.
+3. 거래소/경매장 market snapshot과 캐시를 Spring Boot로 옮긴다.
+4. 전투력, 스펙업 효율, 장비/카드/보석/각인 계산 모델을 Java service로 옮긴다.
+5. 슥구 상담 API, local LLM client, RAG retrieval을 Spring Boot로 옮긴다.
+6. 더 이상 쓰지 않는 Next.js API Route를 제거하고 Next.js를 UI 전용으로 정리한다.
+
+### 문서
+
+- `docs/superpowers/specs/2026-05-29-spring-boot-migration-design.md`에 Spring Boot 이관 설계를 작성한다.
+
+### 다음 작업
+
+- Spring Boot 이관 설계를 기준으로 구현 계획을 작성한다.
+- 1단계부터 6단계까지 각 단계마다 계약 테스트, backend 테스트, frontend 빌드 검증을 통과시키며 진행한다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
