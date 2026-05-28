@@ -9,7 +9,7 @@
     "smoke:sggu": "node scripts/smoke-sggu-consult.mjs",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start",
-    "lint": "node node_modules/eslint/bin/eslint.js .",
+    "lint": "node node_modules/eslint/bin/eslint.js --cache --cache-location .next/cache/eslint/ app components lib scripts tests eslint.config.mjs next.config.mjs",
     "test": "node --test"
   },
   "dependencies": {

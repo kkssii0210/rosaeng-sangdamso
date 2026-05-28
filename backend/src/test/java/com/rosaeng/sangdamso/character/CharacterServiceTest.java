@@ -8,9 +8,11 @@ import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
 import com.rosaeng.sangdamso.lostark.LostarkProperties;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import tools.jackson.databind.JsonNode;
@@ -54,7 +56,7 @@ class CharacterServiceTest {
 
     @Test
     void encodesKoreanCharacterNameAsPathSegment() {
-        List<String> paths = new ArrayList<>();
+        List<String> paths = new CopyOnWriteArrayList<>();
         CharacterService service = new CharacterService(client((method, path, authorization) -> {
             paths.add(path);
             return node(path);
@@ -62,8 +64,8 @@ class CharacterServiceTest {
 
         service.findCharacter("바드");
 
-        assertThat(paths).containsExactly(
-            "/armories/characters/%EB%B0%94%EB%93%9C/profiles",
+        assertThat(paths).first().isEqualTo("/armories/characters/%EB%B0%94%EB%93%9C/profiles");
+        assertThat(paths.subList(1, paths.size())).containsExactlyInAnyOrder(
             "/armories/characters/%EB%B0%94%EB%93%9C/equipment",
             "/armories/characters/%EB%B0%94%EB%93%9C/avatars",
             "/armories/characters/%EB%B0%94%EB%93%9C/arkpassive",
@@ -73,6 +75,27 @@ class CharacterServiceTest {
             "/armories/characters/%EB%B0%94%EB%93%9C/engravings",
             "/armories/characters/%EB%B0%94%EB%93%9C/gems"
         );
+    }
+
+    @Test
+    void fetchesOptionalArmorySectionsConcurrentlyAfterProfile() {
+        CountDownLatch optionalRequestsStarted = new CountDownLatch(8);
+        List<String> optionalPaths = new CopyOnWriteArrayList<>();
+        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+            if (path.endsWith("/profiles")) {
+                return node("profile");
+            }
+
+            optionalPaths.add(path);
+            optionalRequestsStarted.countDown();
+            awaitAllOptionalRequests(optionalRequestsStarted);
+            return node(path);
+        }));
+
+        CharacterResponse response = service.findCharacter("도화가");
+
+        assertThat(response.profile().get("source").asString()).isEqualTo("profile");
+        assertThat(optionalPaths).hasSize(8);
     }
 
     @Test
@@ -170,5 +193,14 @@ class CharacterServiceTest {
 
     private JsonNode node(String source) {
         return objectMapper.createObjectNode().put("source", source);
+    }
+
+    private static void awaitAllOptionalRequests(CountDownLatch latch) {
+        try {
+            assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("interrupted while waiting for optional requests", exception);
+        }
     }
 }

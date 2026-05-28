@@ -3,6 +3,8 @@ package com.rosaeng.sangdamso.lostark;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -64,6 +66,26 @@ class LostarkApiClientTest {
     }
 
     @Test
+    void retryableFailureWaitsBeforeRetrying() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        List<String> retryDelays = new ArrayList<>();
+        JsonNode success = objectMapper.createObjectNode().put("ok", true);
+        LostarkApiClient client = clientWithExecutorAndRetryDelay((method, path, authorization) -> {
+            if (calls.incrementAndGet() == 1) {
+                throw new LostarkApiException(LostarkApiErrorCode.RATE_LIMITED, 429, "rate limited");
+            }
+
+            return success;
+        }, (retryAttempt, exception) -> retryDelays.add(retryAttempt + ":" + exception.getCode()));
+
+        JsonNode result = client.get("/rate-limited");
+
+        assertThat(result.get("ok").asBoolean()).isTrue();
+        assertThat(calls).hasValue(2);
+        assertThat(retryDelays).containsExactly("1:RATE_LIMITED");
+    }
+
+    @Test
     void timeoutRetriesAndThenThrowsTimeout() {
         AtomicInteger calls = new AtomicInteger();
         LostarkApiClient client = clientWithExecutor((method, path, authorization) -> {
@@ -95,6 +117,15 @@ class LostarkApiClientTest {
 
     private LostarkApiClient clientWithExecutor(LostarkApiClient.RequestExecutor executor) {
         LostarkProperties properties = new LostarkProperties("token", "", "https://example.com", 5, 1);
-        return new LostarkApiClient(properties, executor);
+        return new LostarkApiClient(properties, executor, (retryAttempt, exception) -> {
+        });
+    }
+
+    private LostarkApiClient clientWithExecutorAndRetryDelay(
+        LostarkApiClient.RequestExecutor executor,
+        LostarkApiClient.RetryDelay retryDelay
+    ) {
+        LostarkProperties properties = new LostarkProperties("token", "", "https://example.com", 5, 1);
+        return new LostarkApiClient(properties, executor, retryDelay);
     }
 }

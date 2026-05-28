@@ -6,6 +6,10 @@ import com.rosaeng.sangdamso.common.BffException;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
@@ -28,22 +32,33 @@ public class CharacterService {
 
         JsonNode profile = fetchRequiredProfile(basePath + "/profiles");
 
-        return new CharacterResponse(
-            profile,
-            fetchOptional(basePath + "/equipment"),
-            null,
-            fetchOptional(basePath + "/avatars"),
-            fetchOptional(basePath + "/arkpassive"),
-            fetchOptional(basePath + "/arkgrid"),
-            fetchOptional(basePath + "/cards"),
-            fetchOptional(basePath + "/combat-skills"),
-            fetchOptional(basePath + "/engravings"),
-            fetchOptional(basePath + "/gems"),
-            null,
-            null,
-            null,
-            null
-        );
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            Future<JsonNode> equipment = executor.submit(() -> fetchOptional(basePath + "/equipment"));
+            Future<JsonNode> avatars = executor.submit(() -> fetchOptional(basePath + "/avatars"));
+            Future<JsonNode> arkPassive = executor.submit(() -> fetchOptional(basePath + "/arkpassive"));
+            Future<JsonNode> arkGrid = executor.submit(() -> fetchOptional(basePath + "/arkgrid"));
+            Future<JsonNode> cards = executor.submit(() -> fetchOptional(basePath + "/cards"));
+            Future<JsonNode> skills = executor.submit(() -> fetchOptional(basePath + "/combat-skills"));
+            Future<JsonNode> engravings = executor.submit(() -> fetchOptional(basePath + "/engravings"));
+            Future<JsonNode> gems = executor.submit(() -> fetchOptional(basePath + "/gems"));
+
+            return new CharacterResponse(
+                profile,
+                await(equipment),
+                null,
+                await(avatars),
+                await(arkPassive),
+                await(arkGrid),
+                await(cards),
+                await(skills),
+                await(engravings),
+                await(gems),
+                null,
+                null,
+                null,
+                null
+            );
+        }
     }
 
     private JsonNode fetchRequiredProfile(String path) {
@@ -78,6 +93,27 @@ public class CharacterService {
 
             if (isMissingApiKey(exception)) {
                 throw missingApiKey();
+            }
+
+            throw lostarkApiError();
+        }
+    }
+
+    private JsonNode await(Future<JsonNode> future) {
+        try {
+            return future.get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw lostarkApiError();
+        } catch (ExecutionException exception) {
+            Throwable cause = exception.getCause();
+
+            if (cause instanceof BffException bffException) {
+                throw bffException;
+            }
+
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
             }
 
             throw lostarkApiError();
