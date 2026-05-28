@@ -26,13 +26,13 @@ class CharacterServiceTest {
     @Test
     void returnsSuccessfulTopLevelFields() {
         CharacterService service = serviceWithResponses(Map.of(
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/profiles", node("profile"),
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/profiles", profile("소울이터"),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/equipment", equipment(
                 equipmentItem("무기", "검은 밤의 장검", "고대", tooltip(97, "기본 효과", "무기 공격력 +12345")),
                 equipmentItem("보주", "눈부신 비전의 보주", "유물", tooltip(-1, "특수 효과", "[맥스웰 맥시마]", "시즌2 달성 최대 낙원력 : 48,275,714"))
             ),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/avatars", avatars(),
-            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkpassive", node("arkPassive"),
+            "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkpassive", arkPassive(),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkgrid", node("arkGrid"),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/cards", cards(),
             "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/combat-skills", node("skills"),
@@ -42,21 +42,22 @@ class CharacterServiceTest {
 
         CharacterResponse response = service.findCharacter("도화가");
 
-        assertThat(response.profile().get("source").asString()).isEqualTo("profile");
+        assertThat(response.profile().get("CharacterClassName").asString()).isEqualTo("소울이터");
         assertThat(response.equipment().size()).isEqualTo(1);
         assertThat(response.equipment().get(0).get("Type").asString()).isEqualTo("무기");
         assertThat(response.equipment().get(0).get("Tooltip")).isNull();
         assertThat(response.paradiseOrb().get("Type").asString()).isEqualTo("보주");
         assertThat(response.paradiseOrb().get("EffectName").asString()).isEqualTo("맥스웰 맥시마");
         assertThat(response.avatars().get(0).get("StatEffects").get(0).get("Stat").asString()).isEqualTo("민첩");
-        assertThat(response.arkPassive().get("source").asString()).isEqualTo("arkPassive");
+        assertThat(response.arkPassive().get("Effects").get(0).get("Description").asString()).contains("만월의 집행자");
         assertThat(response.arkGrid().get("source").asString()).isEqualTo("arkGrid");
         assertThat(response.cards().get("AwakeTotal").asInt()).isEqualTo(3);
         assertThat(response.cards().get("ActiveEffects").get(0).get("Kind").asString()).isEqualTo("damageReduction");
         assertThat(response.skills().get("source").asString()).isEqualTo("skills");
         assertThat(response.engravings().get(0).get("EfficiencyText").asString()).isEqualTo("20.00%");
         assertThat(response.gems().get(0).get("SkillName").asString()).isEqualTo("글러트니");
-        assertThat(response.classIdentityEffects()).isNull();
+        assertThat(response.classIdentityEffects().get("ClassName").asString()).isEqualTo("소울이터");
+        assertThat(response.classIdentityEffects().get("Effects").get(0).get("IsActive").asBoolean()).isTrue();
         assertThat(response.criticalStats()).isNull();
         assertThat(response.combatPowerAnalysis()).isNull();
         assertThat(response.upgradeEfficiency()).isNull();
@@ -202,6 +203,18 @@ class CharacterServiceTest {
 
     private JsonNode node(String source) {
         return objectMapper.createObjectNode().put("source", source);
+    }
+
+    private JsonNode profile(String className) {
+        return objectMapper.createObjectNode()
+            .put("CharacterName", "도화가")
+            .put("CharacterClassName", className);
+    }
+
+    private JsonNode arkPassive() {
+        return objectMapper.convertValue(Map.of(
+            "Effects", List.of(Map.of("Description", "깨달음 2티어 만월의 집행자 Lv.3"))
+        ), JsonNode.class);
     }
 
     private JsonNode equipment(JsonNode... items) {

@@ -11,6 +11,9 @@ import com.rosaeng.sangdamso.character.gems.GemsNormalizer;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
+import com.rosaeng.sangdamso.spec.ClassIdentityService;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +31,7 @@ public class CharacterService {
     private final LostarkApiClient lostarkApiClient;
     private final AvatarNormalizer avatarNormalizer = new AvatarNormalizer();
     private final CardsNormalizer cardsNormalizer = new CardsNormalizer();
+    private final ClassIdentityService classIdentityService = new ClassIdentityService();
     private final EngravingsNormalizer engravingsNormalizer = new EngravingsNormalizer();
     private final EquipmentNormalizer equipmentNormalizer = new EquipmentNormalizer();
     private final GemsNormalizer gemsNormalizer = new GemsNormalizer();
@@ -53,27 +57,40 @@ public class CharacterService {
             Future<JsonNode> gems = executor.submit(() -> fetchOptional(ArmorySection.GEMS.path(basePath)));
             JsonNode rawEquipment = await(equipment);
             JsonNode rawAvatars = await(avatars);
+            JsonNode rawArkPassive = await(arkPassive);
             JsonNode rawCards = await(cards);
             JsonNode rawEngravings = await(engravings);
             JsonNode rawGems = await(gems);
+            JsonNode normalizedEngravings = engravingsNormalizer.normalize(rawEngravings);
+            JsonNode classIdentityEffects = classIdentityService.build(
+                profile,
+                classIdentityContext(rawArkPassive, normalizedEngravings)
+            );
 
             return new CharacterResponse(
                 profile,
                 equipmentNormalizer.normalize(rawEquipment),
                 equipmentNormalizer.extractParadiseOrb(rawEquipment),
                 avatarNormalizer.normalize(rawAvatars),
-                await(arkPassive),
+                rawArkPassive,
                 await(arkGrid),
                 cardsNormalizer.normalize(rawCards),
                 await(skills),
-                engravingsNormalizer.normalize(rawEngravings),
+                normalizedEngravings,
                 gemsNormalizer.normalize(rawGems),
-                null,
+                classIdentityEffects,
                 null,
                 null,
                 null
             );
         }
+    }
+
+    private Map<String, JsonNode> classIdentityContext(JsonNode arkPassive, JsonNode engravings) {
+        Map<String, JsonNode> context = new LinkedHashMap<>();
+        context.put("arkPassive", arkPassive);
+        context.put("engravings", engravings);
+        return context;
     }
 
     private JsonNode fetchRequiredProfile(String path) {
