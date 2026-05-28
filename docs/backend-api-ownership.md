@@ -5,7 +5,7 @@ Date: 2026-05-29
 | Browser Path | Active Owner | Target Owner | Migration State |
 | --- | --- | --- | --- |
 | `/api/characters/{name}` | Next.js | Spring Boot | Spring exists, parity incomplete |
-| `/api/market/snapshot` | Next.js | Spring Boot | Not started |
+| `/api/market/snapshot` | Spring Boot | Spring Boot | Spring owner active |
 | `/api/consult/sggu` | Next.js | Spring Boot | Not started |
 
 Rules:
