@@ -12,6 +12,7 @@ import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
 import com.rosaeng.sangdamso.spec.ClassIdentityService;
+import com.rosaeng.sangdamso.spec.CriticalStatsService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ public class CharacterService {
     private final AvatarNormalizer avatarNormalizer = new AvatarNormalizer();
     private final CardsNormalizer cardsNormalizer = new CardsNormalizer();
     private final ClassIdentityService classIdentityService = new ClassIdentityService();
+    private final CriticalStatsService criticalStatsService = new CriticalStatsService();
     private final EngravingsNormalizer engravingsNormalizer = new EngravingsNormalizer();
     private final EquipmentNormalizer equipmentNormalizer = new EquipmentNormalizer();
     private final GemsNormalizer gemsNormalizer = new GemsNormalizer();
@@ -58,28 +60,42 @@ public class CharacterService {
             JsonNode rawEquipment = await(equipment);
             JsonNode rawAvatars = await(avatars);
             JsonNode rawArkPassive = await(arkPassive);
+            JsonNode rawArkGrid = await(arkGrid);
+            JsonNode rawSkills = await(skills);
             JsonNode rawCards = await(cards);
             JsonNode rawEngravings = await(engravings);
             JsonNode rawGems = await(gems);
+            JsonNode normalizedEquipment = equipmentNormalizer.normalize(rawEquipment);
+            JsonNode normalizedCards = cardsNormalizer.normalize(rawCards);
             JsonNode normalizedEngravings = engravingsNormalizer.normalize(rawEngravings);
             JsonNode classIdentityEffects = classIdentityService.build(
                 profile,
                 classIdentityContext(rawArkPassive, normalizedEngravings)
             );
+            JsonNode criticalStats = criticalStatsService.build(criticalStatsContext(
+                profile,
+                normalizedEquipment,
+                normalizedEngravings,
+                rawSkills,
+                rawArkPassive,
+                rawArkGrid,
+                normalizedCards,
+                classIdentityEffects
+            ));
 
             return new CharacterResponse(
                 profile,
-                equipmentNormalizer.normalize(rawEquipment),
+                normalizedEquipment,
                 equipmentNormalizer.extractParadiseOrb(rawEquipment),
                 avatarNormalizer.normalize(rawAvatars),
                 rawArkPassive,
-                await(arkGrid),
-                cardsNormalizer.normalize(rawCards),
-                await(skills),
+                rawArkGrid,
+                normalizedCards,
+                rawSkills,
                 normalizedEngravings,
                 gemsNormalizer.normalize(rawGems),
                 classIdentityEffects,
-                null,
+                criticalStats,
                 null,
                 null
             );
@@ -90,6 +106,28 @@ public class CharacterService {
         Map<String, JsonNode> context = new LinkedHashMap<>();
         context.put("arkPassive", arkPassive);
         context.put("engravings", engravings);
+        return context;
+    }
+
+    private Map<String, JsonNode> criticalStatsContext(
+        JsonNode profile,
+        JsonNode equipment,
+        JsonNode engravings,
+        JsonNode skills,
+        JsonNode arkPassive,
+        JsonNode arkGrid,
+        JsonNode cards,
+        JsonNode classIdentityEffects
+    ) {
+        Map<String, JsonNode> context = new LinkedHashMap<>();
+        context.put("profile", profile);
+        context.put("equipment", equipment);
+        context.put("engravings", engravings);
+        context.put("skills", skills);
+        context.put("arkPassive", arkPassive);
+        context.put("arkGrid", arkGrid);
+        context.put("cards", cards);
+        context.put("classIdentityEffects", classIdentityEffects);
         return context;
     }
 
