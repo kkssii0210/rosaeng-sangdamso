@@ -12,7 +12,9 @@ import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
 import com.rosaeng.sangdamso.spec.ClassIdentityService;
+import com.rosaeng.sangdamso.spec.CombatPowerAnalysisService;
 import com.rosaeng.sangdamso.spec.CriticalStatsService;
+import com.rosaeng.sangdamso.spec.UpgradeEfficiencyService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -33,10 +35,12 @@ public class CharacterService {
     private final AvatarNormalizer avatarNormalizer = new AvatarNormalizer();
     private final CardsNormalizer cardsNormalizer = new CardsNormalizer();
     private final ClassIdentityService classIdentityService = new ClassIdentityService();
+    private final CombatPowerAnalysisService combatPowerAnalysisService = new CombatPowerAnalysisService();
     private final CriticalStatsService criticalStatsService = new CriticalStatsService();
     private final EngravingsNormalizer engravingsNormalizer = new EngravingsNormalizer();
     private final EquipmentNormalizer equipmentNormalizer = new EquipmentNormalizer();
     private final GemsNormalizer gemsNormalizer = new GemsNormalizer();
+    private final UpgradeEfficiencyService upgradeEfficiencyService = new UpgradeEfficiencyService();
 
     public CharacterService(LostarkApiClient lostarkApiClient) {
         this.lostarkApiClient = lostarkApiClient;
@@ -66,8 +70,10 @@ public class CharacterService {
             JsonNode rawEngravings = await(engravings);
             JsonNode rawGems = await(gems);
             JsonNode normalizedEquipment = equipmentNormalizer.normalize(rawEquipment);
+            JsonNode paradiseOrb = equipmentNormalizer.extractParadiseOrb(rawEquipment);
             JsonNode normalizedCards = cardsNormalizer.normalize(rawCards);
             JsonNode normalizedEngravings = engravingsNormalizer.normalize(rawEngravings);
+            JsonNode normalizedGems = gemsNormalizer.normalize(rawGems);
             JsonNode classIdentityEffects = classIdentityService.build(
                 profile,
                 classIdentityContext(rawArkPassive, normalizedEngravings)
@@ -82,22 +88,34 @@ public class CharacterService {
                 normalizedCards,
                 classIdentityEffects
             ));
+            JsonNode combatPowerAnalysis = combatPowerAnalysisService.build(combatPowerContext(
+                profile,
+                normalizedEquipment,
+                paradiseOrb,
+                criticalStats
+            ));
+            JsonNode upgradeEfficiency = upgradeEfficiencyService.build(upgradeEfficiencyContext(
+                profile,
+                normalizedEquipment,
+                normalizedGems,
+                criticalStats
+            ));
 
             return new CharacterResponse(
                 profile,
                 normalizedEquipment,
-                equipmentNormalizer.extractParadiseOrb(rawEquipment),
+                paradiseOrb,
                 avatarNormalizer.normalize(rawAvatars),
                 rawArkPassive,
                 rawArkGrid,
                 normalizedCards,
                 rawSkills,
                 normalizedEngravings,
-                gemsNormalizer.normalize(rawGems),
+                normalizedGems,
                 classIdentityEffects,
                 criticalStats,
-                null,
-                null
+                combatPowerAnalysis,
+                upgradeEfficiency
             );
         }
     }
@@ -128,6 +146,34 @@ public class CharacterService {
         context.put("arkGrid", arkGrid);
         context.put("cards", cards);
         context.put("classIdentityEffects", classIdentityEffects);
+        return context;
+    }
+
+    private Map<String, JsonNode> combatPowerContext(
+        JsonNode profile,
+        JsonNode equipment,
+        JsonNode paradiseOrb,
+        JsonNode criticalStats
+    ) {
+        Map<String, JsonNode> context = new LinkedHashMap<>();
+        context.put("profile", profile);
+        context.put("equipment", equipment);
+        context.put("paradiseOrb", paradiseOrb);
+        context.put("criticalStats", criticalStats);
+        return context;
+    }
+
+    private Map<String, JsonNode> upgradeEfficiencyContext(
+        JsonNode profile,
+        JsonNode equipment,
+        JsonNode gems,
+        JsonNode criticalStats
+    ) {
+        Map<String, JsonNode> context = new LinkedHashMap<>();
+        context.put("profile", profile);
+        context.put("equipment", equipment);
+        context.put("gems", gems);
+        context.put("criticalStats", criticalStats);
         return context;
     }
 

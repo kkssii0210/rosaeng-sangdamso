@@ -59,8 +59,9 @@ class CharacterServiceTest {
         assertThat(response.classIdentityEffects().get("ClassName").asString()).isEqualTo("소울이터");
         assertThat(response.classIdentityEffects().get("Effects").get(0).get("IsActive").asBoolean()).isTrue();
         assertThat(response.criticalStats().get("ConditionalCriticalRatePercent").asDouble()).isEqualTo(20.0);
-        assertThat(response.combatPowerAnalysis()).isNull();
-        assertThat(response.upgradeEfficiency()).isNull();
+        assertThat(response.combatPowerAnalysis().get("Status").asString()).isEqualTo("partial");
+        assertThat(response.combatPowerAnalysis().get("OfficialCombatPower").asDouble()).isEqualTo(123456.78);
+        assertThat(response.upgradeEfficiency().get("MarketDataStatus").asString()).isEqualTo("unavailable");
     }
 
     @Test
@@ -208,7 +209,8 @@ class CharacterServiceTest {
     private JsonNode profile(String className) {
         return objectMapper.createObjectNode()
             .put("CharacterName", "도화가")
-            .put("CharacterClassName", className);
+            .put("CharacterClassName", className)
+            .put("CombatPower", "123,456.78");
     }
 
     private JsonNode arkPassive() {
