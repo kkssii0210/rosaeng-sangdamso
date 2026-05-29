@@ -8,6 +8,7 @@ import com.rosaeng.sangdamso.character.engraving.EngravingsNormalizer;
 import com.rosaeng.sangdamso.common.BffException;
 import com.rosaeng.sangdamso.character.equipment.EquipmentNormalizer;
 import com.rosaeng.sangdamso.character.gems.GemsNormalizer;
+import com.rosaeng.sangdamso.efficiency.SpecUpCharacterContext;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
@@ -56,7 +57,43 @@ public class CharacterService {
     }
 
     public CharacterResponse findCharacter(String characterName) {
-        String encodedName = UriUtils.encodePathSegment(characterName.trim(), UTF_8);
+        SpecUpCharacterContext context = buildSpecUpContext(characterName, false);
+        JsonNode upgradeEfficiency = upgradeEfficiencyService.build(upgradeEfficiencyContext(
+            context.profile(),
+            context.equipment(),
+            context.avatars(),
+            context.arkPassive(),
+            context.arkGrid(),
+            context.cards(),
+            context.engravings(),
+            context.gems(),
+            context.paradiseOrb(),
+            context.criticalStats(),
+            context.marketSnapshot(),
+            context.engravingBookPrices()
+        ));
+
+        return new CharacterResponse(
+            context.profile(),
+            context.equipment(),
+            context.paradiseOrb(),
+            context.avatars(),
+            context.arkPassive(),
+            context.arkGrid(),
+            context.cards(),
+            context.skills(),
+            context.engravings(),
+            context.gems(),
+            context.classIdentityEffects(),
+            context.criticalStats(),
+            context.combatPowerAnalysis(),
+            upgradeEfficiency
+        );
+    }
+
+    public SpecUpCharacterContext buildSpecUpContext(String characterName, boolean forceRefresh) {
+        String trimmedName = characterName.trim();
+        String encodedName = UriUtils.encodePathSegment(trimmedName, UTF_8);
         String basePath = ARMORY_CHARACTER_PATH + encodedName;
 
         JsonNode profile = fetchRequiredProfile(basePath + "/profiles");
@@ -104,24 +141,11 @@ public class CharacterService {
                 paradiseOrb,
                 criticalStats
             ));
-            JsonNode marketSnapshot = loadMarketSnapshot();
+            JsonNode marketSnapshot = loadMarketSnapshot(forceRefresh);
             JsonNode engravingBookPrices = loadEngravingBookPrices(normalizedEngravings);
-            JsonNode upgradeEfficiency = upgradeEfficiencyService.build(upgradeEfficiencyContext(
-                profile,
-                normalizedEquipment,
-                normalizedAvatars,
-                rawArkPassive,
-                rawArkGrid,
-                normalizedCards,
-                normalizedEngravings,
-                normalizedGems,
-                paradiseOrb,
-                criticalStats,
-                marketSnapshot,
-                engravingBookPrices
-            ));
 
-            return new CharacterResponse(
+            return new SpecUpCharacterContext(
+                trimmedName,
                 profile,
                 normalizedEquipment,
                 paradiseOrb,
@@ -135,7 +159,8 @@ public class CharacterService {
                 classIdentityEffects,
                 criticalStats,
                 combatPowerAnalysis,
-                upgradeEfficiency
+                marketSnapshot,
+                engravingBookPrices
             );
         }
     }
@@ -213,13 +238,13 @@ public class CharacterService {
         return context;
     }
 
-    private JsonNode loadMarketSnapshot() {
+    private JsonNode loadMarketSnapshot(boolean forceRefresh) {
         if (marketSnapshotService == null) {
             return null;
         }
 
         try {
-            return marketSnapshotService.getSnapshot(false);
+            return marketSnapshotService.getSnapshot(forceRefresh);
         } catch (BffException exception) {
             return null;
         }

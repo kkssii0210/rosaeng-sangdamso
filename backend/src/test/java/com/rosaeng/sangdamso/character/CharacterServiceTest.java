@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.rosaeng.sangdamso.common.BffException;
+import com.rosaeng.sangdamso.efficiency.SpecUpCharacterContext;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
@@ -93,6 +94,37 @@ class CharacterServiceTest {
         JsonNode engravingBooks = response.upgradeEfficiency().get("CostInputs").get("EngravingBooks");
         assertThat(engravingBooks.size()).isEqualTo(1);
         assertThat(engravingBooks.get(0).get("CostForFiveBooks").asInt()).isEqualTo(500);
+    }
+
+    @Test
+    void buildsReusableSpecUpContext() {
+        CharacterService service = new CharacterService(
+            client(Map.of(
+                "/armories/characters/%EB%B6%90%EB%B2%84/profiles", profile("소울이터"),
+                "/armories/characters/%EB%B6%90%EB%B2%84/equipment", equipment(
+                    equipmentItem("무기", "+11 세르카 고대 무기", "고대", tooltip(97, "기본 효과", "무기 공격력 +167706"))
+                ),
+                "/armories/characters/%EB%B6%90%EB%B2%84/avatars", avatars(),
+                "/armories/characters/%EB%B6%90%EB%B2%84/arkpassive", arkPassive(),
+                "/armories/characters/%EB%B6%90%EB%B2%84/arkgrid", node("arkGrid"),
+                "/armories/characters/%EB%B6%90%EB%B2%84/cards", cards(),
+                "/armories/characters/%EB%B6%90%EB%B2%84/combat-skills", node("skills"),
+                "/armories/characters/%EB%B6%90%EB%B2%84/engravings", engravings(3),
+                "/armories/characters/%EB%B6%90%EB%B2%84/gems", gems()
+            )),
+            marketSnapshotService("token")
+        );
+
+        SpecUpCharacterContext context = service.buildSpecUpContext("붐버", false);
+
+        assertThat(context.characterName()).isEqualTo("붐버");
+        assertThat(context.profile()).isNotNull();
+        assertThat(context.equipment().isArray()).isTrue();
+        assertThat(context.avatars().isArray()).isTrue();
+        assertThat(context.engravings().isArray()).isTrue();
+        assertThat(context.gems().isArray()).isTrue();
+        assertThat(context.marketSnapshot()).isNotNull();
+        assertThat(context.engravingBookPrices().isArray()).isTrue();
     }
 
     @Test
