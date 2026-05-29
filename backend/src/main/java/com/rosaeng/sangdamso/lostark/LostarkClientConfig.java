@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.RequestBodySpec;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -33,15 +34,29 @@ public class LostarkClientConfig {
 
     @Bean
     LostarkApiClient lostarkApiClient(LostarkProperties properties, RestClient lostarkRestClient, ObjectMapper objectMapper) {
-        return new LostarkApiClient(properties, (method, path, authorization) -> execute(lostarkRestClient, objectMapper, method, path, authorization));
+        return new LostarkApiClient(properties, (method, path, authorization, body) ->
+            execute(lostarkRestClient, objectMapper, method, path, authorization, body));
     }
 
-    private JsonNode execute(RestClient restClient, ObjectMapper objectMapper, HttpMethod method, String path, String authorization) {
+    private JsonNode execute(
+        RestClient restClient,
+        ObjectMapper objectMapper,
+        HttpMethod method,
+        String path,
+        String authorization,
+        JsonNode body
+    ) {
         try {
-            return restClient
+            RequestBodySpec requestSpec = restClient
                 .method(method)
                 .uri(path)
-                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .header(HttpHeaders.AUTHORIZATION, authorization);
+
+            if (body != null) {
+                requestSpec.contentType(MediaType.APPLICATION_JSON).body(body);
+            }
+
+            return requestSpec
                 .exchange((request, response) -> {
                     String responseBody = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
 

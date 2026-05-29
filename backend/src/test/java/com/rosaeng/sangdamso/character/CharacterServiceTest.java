@@ -98,7 +98,7 @@ class CharacterServiceTest {
     @Test
     void encodesKoreanCharacterNameAsPathSegment() {
         List<String> paths = new CopyOnWriteArrayList<>();
-        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+        CharacterService service = new CharacterService(client((method, path, authorization, body) -> {
             paths.add(path);
             return node(path);
         }));
@@ -122,7 +122,7 @@ class CharacterServiceTest {
     void fetchesOptionalArmorySectionsConcurrentlyAfterProfile() {
         CountDownLatch optionalRequestsStarted = new CountDownLatch(8);
         List<String> optionalPaths = new CopyOnWriteArrayList<>();
-        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+        CharacterService service = new CharacterService(client((method, path, authorization, body) -> {
             if (path.endsWith("/profiles")) {
                 return node("profile");
             }
@@ -141,7 +141,7 @@ class CharacterServiceTest {
 
     @Test
     void mapsProfileNotFoundToCharacterNotFound() {
-        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+        CharacterService service = new CharacterService(client((method, path, authorization, body) -> {
             throw new LostarkApiException(LostarkApiErrorCode.NOT_FOUND, 404, "missing");
         }));
 
@@ -155,7 +155,7 @@ class CharacterServiceTest {
 
     @Test
     void mapsNullProfileToCharacterNotFound() {
-        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+        CharacterService service = new CharacterService(client((method, path, authorization, body) -> {
             if (path.endsWith("/profiles")) {
                 return null;
             }
@@ -173,7 +173,7 @@ class CharacterServiceTest {
 
     @Test
     void mapsOptionalEquipmentNotFoundToEmptyArray() {
-        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+        CharacterService service = new CharacterService(client((method, path, authorization, body) -> {
             if (path.endsWith("/equipment")) {
                 throw new LostarkApiException(LostarkApiErrorCode.NOT_FOUND, 404, "missing");
             }
@@ -191,7 +191,7 @@ class CharacterServiceTest {
 
     @Test
     void mapsUpstreamFailureToBadGateway() {
-        CharacterService service = new CharacterService(client((method, path, authorization) -> {
+        CharacterService service = new CharacterService(client((method, path, authorization, body) -> {
             if (path.endsWith("/cards")) {
                 throw new LostarkApiException(LostarkApiErrorCode.UPSTREAM_ERROR, 500, "upstream");
             }
@@ -220,11 +220,11 @@ class CharacterServiceTest {
     }
 
     private CharacterService serviceWithResponses(Map<String, JsonNode> responses) {
-        return new CharacterService(client((method, path, authorization) -> responses.get(path)));
+        return new CharacterService(client((method, path, authorization, body) -> responses.get(path)));
     }
 
     private LostarkApiClient client(Map<String, JsonNode> responses) {
-        return client((method, path, authorization) -> responses.get(path));
+        return client((method, path, authorization, body) -> responses.get(path));
     }
 
     private LostarkApiClient client(LostarkApiClient.RequestExecutor executor) {
@@ -234,7 +234,7 @@ class CharacterServiceTest {
 
     private LostarkApiClient clientWithBlankAuthorization() {
         LostarkProperties properties = new LostarkProperties("", "", "https://example.com", 5, 0);
-        return new LostarkApiClient(properties, (method, path, authorization) -> node(path));
+        return new LostarkApiClient(properties, (method, path, authorization, body) -> node(path));
     }
 
     private MarketSnapshotService marketSnapshotService(String apiKey) {

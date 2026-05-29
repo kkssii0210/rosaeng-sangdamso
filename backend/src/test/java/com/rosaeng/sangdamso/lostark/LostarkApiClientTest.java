@@ -17,7 +17,7 @@ class LostarkApiClientTest {
     @Test
     void notFoundDoesNotRetry() {
         AtomicInteger calls = new AtomicInteger();
-        LostarkApiClient client = clientWithExecutor((method, path, authorization) -> {
+        LostarkApiClient client = clientWithExecutor((method, path, authorization, body) -> {
             calls.incrementAndGet();
             throw new LostarkApiException(LostarkApiErrorCode.NOT_FOUND, 404, "missing");
         });
@@ -33,7 +33,7 @@ class LostarkApiClientTest {
     void upstreamErrorRetriesOnceAndCanSucceed() throws Exception {
         AtomicInteger calls = new AtomicInteger();
         JsonNode success = objectMapper.createObjectNode().put("ok", true);
-        LostarkApiClient client = clientWithExecutor((method, path, authorization) -> {
+        LostarkApiClient client = clientWithExecutor((method, path, authorization, body) -> {
             if (calls.incrementAndGet() == 1) {
                 throw new LostarkApiException(LostarkApiErrorCode.UPSTREAM_ERROR, 500, "temporary");
             }
@@ -51,7 +51,7 @@ class LostarkApiClientTest {
     void rateLimitRetriesOnceAndCanSucceed() throws Exception {
         AtomicInteger calls = new AtomicInteger();
         JsonNode success = objectMapper.createObjectNode().put("ok", true);
-        LostarkApiClient client = clientWithExecutor((method, path, authorization) -> {
+        LostarkApiClient client = clientWithExecutor((method, path, authorization, body) -> {
             if (calls.incrementAndGet() == 1) {
                 throw new LostarkApiException(LostarkApiErrorCode.RATE_LIMITED, 429, "rate limited");
             }
@@ -70,7 +70,7 @@ class LostarkApiClientTest {
         AtomicInteger calls = new AtomicInteger();
         List<String> retryDelays = new ArrayList<>();
         JsonNode success = objectMapper.createObjectNode().put("ok", true);
-        LostarkApiClient client = clientWithExecutorAndRetryDelay((method, path, authorization) -> {
+        LostarkApiClient client = clientWithExecutorAndRetryDelay((method, path, authorization, body) -> {
             if (calls.incrementAndGet() == 1) {
                 throw new LostarkApiException(LostarkApiErrorCode.RATE_LIMITED, 429, "rate limited");
             }
@@ -88,7 +88,7 @@ class LostarkApiClientTest {
     @Test
     void timeoutRetriesAndThenThrowsTimeout() {
         AtomicInteger calls = new AtomicInteger();
-        LostarkApiClient client = clientWithExecutor((method, path, authorization) -> {
+        LostarkApiClient client = clientWithExecutor((method, path, authorization, body) -> {
             calls.incrementAndGet();
             throw new LostarkApiException(LostarkApiErrorCode.TIMEOUT, null, "timeout");
         });
@@ -103,7 +103,7 @@ class LostarkApiClientTest {
     @Test
     void networkFailureRetriesAndThenThrowsNetworkError() {
         AtomicInteger calls = new AtomicInteger();
-        LostarkApiClient client = clientWithExecutor((method, path, authorization) -> {
+        LostarkApiClient client = clientWithExecutor((method, path, authorization, body) -> {
             calls.incrementAndGet();
             throw new LostarkApiException(LostarkApiErrorCode.NETWORK_ERROR, null, "network");
         });
@@ -113,6 +113,27 @@ class LostarkApiClientTest {
             .extracting("code")
             .isEqualTo(LostarkApiErrorCode.NETWORK_ERROR);
         assertThat(calls).hasValue(2);
+    }
+
+    @Test
+    void postsJsonBodyWithAuthorization() {
+        JsonNode body = objectMapper.createObjectNode().put("CategoryCode", 200010);
+        List<String> calls = new ArrayList<>();
+        LostarkProperties properties = new LostarkProperties("token", "", "https://example.com", 5, 1);
+        LostarkApiClient client = new LostarkApiClient(
+            properties,
+            (method, path, authorization, requestBody) -> {
+                calls.add(method + " " + path + " " + authorization + " " + requestBody.get("CategoryCode").asInt());
+                return objectMapper.createObjectNode().put("ok", true);
+            },
+            (retryAttempt, exception) -> {
+            }
+        );
+
+        JsonNode result = client.post("/auctions/items", body);
+
+        assertThat(result.get("ok").asBoolean()).isTrue();
+        assertThat(calls).containsExactly("POST /auctions/items bearer token 200010");
     }
 
     private LostarkApiClient clientWithExecutor(LostarkApiClient.RequestExecutor executor) {

@@ -21,6 +21,14 @@ public class LostarkApiClient {
     }
 
     public JsonNode get(String path) {
+        return request(HttpMethod.GET, path, null);
+    }
+
+    public JsonNode post(String path, JsonNode body) {
+        return request(HttpMethod.POST, path, body);
+    }
+
+    private JsonNode request(HttpMethod method, String path, JsonNode body) {
         Optional<String> authorization = properties.authorization();
 
         if (authorization.isEmpty()) {
@@ -29,7 +37,7 @@ public class LostarkApiClient {
 
         for (int attempt = 0; attempt <= properties.retryCount(); attempt++) {
             try {
-                return requestExecutor.execute(HttpMethod.GET, path, authorization.get());
+                return requestExecutor.execute(method, path, authorization.get(), body);
             } catch (LostarkApiException exception) {
                 if (attempt >= properties.retryCount() || !isRetryable(exception.getCode())) {
                     throw exception;
@@ -67,7 +75,7 @@ public class LostarkApiClient {
 
     @FunctionalInterface
     public interface RequestExecutor {
-        JsonNode execute(HttpMethod method, String path, String authorization);
+        JsonNode execute(HttpMethod method, String path, String authorization, JsonNode body);
     }
 
     @FunctionalInterface
