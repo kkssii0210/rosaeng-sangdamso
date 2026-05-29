@@ -11,6 +11,7 @@ import com.rosaeng.sangdamso.character.gems.GemsNormalizer;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
+import com.rosaeng.sangdamso.market.MarketSnapshotService;
 import com.rosaeng.sangdamso.spec.ClassIdentityService;
 import com.rosaeng.sangdamso.spec.CombatPowerAnalysisService;
 import com.rosaeng.sangdamso.spec.CriticalStatsService;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
@@ -32,6 +34,7 @@ public class CharacterService {
     private static final String ARMORY_CHARACTER_PATH = "/armories/characters/";
 
     private final LostarkApiClient lostarkApiClient;
+    private final MarketSnapshotService marketSnapshotService;
     private final AvatarNormalizer avatarNormalizer = new AvatarNormalizer();
     private final CardsNormalizer cardsNormalizer = new CardsNormalizer();
     private final ClassIdentityService classIdentityService = new ClassIdentityService();
@@ -43,7 +46,13 @@ public class CharacterService {
     private final UpgradeEfficiencyService upgradeEfficiencyService = new UpgradeEfficiencyService();
 
     public CharacterService(LostarkApiClient lostarkApiClient) {
+        this(lostarkApiClient, null);
+    }
+
+    @Autowired
+    public CharacterService(LostarkApiClient lostarkApiClient, MarketSnapshotService marketSnapshotService) {
         this.lostarkApiClient = lostarkApiClient;
+        this.marketSnapshotService = marketSnapshotService;
     }
 
     public CharacterResponse findCharacter(String characterName) {
@@ -71,6 +80,7 @@ public class CharacterService {
             JsonNode rawGems = await(gems);
             JsonNode normalizedEquipment = equipmentNormalizer.normalize(rawEquipment);
             JsonNode paradiseOrb = equipmentNormalizer.extractParadiseOrb(rawEquipment);
+            JsonNode normalizedAvatars = avatarNormalizer.normalize(rawAvatars);
             JsonNode normalizedCards = cardsNormalizer.normalize(rawCards);
             JsonNode normalizedEngravings = engravingsNormalizer.normalize(rawEngravings);
             JsonNode normalizedGems = gemsNormalizer.normalize(rawGems);
@@ -94,18 +104,28 @@ public class CharacterService {
                 paradiseOrb,
                 criticalStats
             ));
+            JsonNode marketSnapshot = loadMarketSnapshot();
+            JsonNode engravingBookPrices = loadEngravingBookPrices(normalizedEngravings);
             JsonNode upgradeEfficiency = upgradeEfficiencyService.build(upgradeEfficiencyContext(
                 profile,
                 normalizedEquipment,
+                normalizedAvatars,
+                rawArkPassive,
+                rawArkGrid,
+                normalizedCards,
+                normalizedEngravings,
                 normalizedGems,
-                criticalStats
+                paradiseOrb,
+                criticalStats,
+                marketSnapshot,
+                engravingBookPrices
             ));
 
             return new CharacterResponse(
                 profile,
                 normalizedEquipment,
                 paradiseOrb,
-                avatarNormalizer.normalize(rawAvatars),
+                normalizedAvatars,
                 rawArkPassive,
                 rawArkGrid,
                 normalizedCards,
@@ -166,15 +186,55 @@ public class CharacterService {
     private Map<String, JsonNode> upgradeEfficiencyContext(
         JsonNode profile,
         JsonNode equipment,
+        JsonNode avatars,
+        JsonNode arkPassive,
+        JsonNode arkGrid,
+        JsonNode cards,
+        JsonNode engravings,
         JsonNode gems,
-        JsonNode criticalStats
+        JsonNode paradiseOrb,
+        JsonNode criticalStats,
+        JsonNode marketSnapshot,
+        JsonNode engravingBookPrices
     ) {
         Map<String, JsonNode> context = new LinkedHashMap<>();
         context.put("profile", profile);
         context.put("equipment", equipment);
+        context.put("avatars", avatars);
+        context.put("arkPassive", arkPassive);
+        context.put("arkGrid", arkGrid);
+        context.put("cards", cards);
+        context.put("engravings", engravings);
         context.put("gems", gems);
+        context.put("paradiseOrb", paradiseOrb);
         context.put("criticalStats", criticalStats);
+        context.put("marketSnapshot", marketSnapshot);
+        context.put("engravingBookPrices", engravingBookPrices);
         return context;
+    }
+
+    private JsonNode loadMarketSnapshot() {
+        if (marketSnapshotService == null) {
+            return null;
+        }
+
+        try {
+            return marketSnapshotService.getSnapshot(false);
+        } catch (BffException exception) {
+            return null;
+        }
+    }
+
+    private JsonNode loadEngravingBookPrices(JsonNode engravings) {
+        if (marketSnapshotService == null) {
+            return null;
+        }
+
+        try {
+            return marketSnapshotService.getRelicBookPrices(engravings);
+        } catch (BffException exception) {
+            return null;
+        }
     }
 
     private JsonNode fetchRequiredProfile(String path) {

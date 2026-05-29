@@ -4,6 +4,7 @@ import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.ar
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.child;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.orderedMap;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.toJsonNode;
+import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.toJsonNode;
 
 import com.rosaeng.sangdamso.common.BffException;
 import com.rosaeng.sangdamso.lostark.LostarkProperties;
@@ -14,6 +15,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -23,6 +26,7 @@ import tools.jackson.databind.JsonNode;
 @Service
 public class MarketSnapshotService {
 
+    private static final Pattern GEM_LEVEL_PATTERN = Pattern.compile("(?<level>\\d+)\\s*레벨");
     private final LostarkProperties properties;
     private final MarketSnapshotClient client;
     private final MarketSnapshotCache cache;
@@ -66,6 +70,20 @@ public class MarketSnapshotService {
         }
     }
 
+    public JsonNode getRelicBookPrices(JsonNode engravings) {
+        String authorization = properties.authorization().orElseThrow(this::missingApiKey);
+        List<String> engravingNames = arrayItems(engravings).stream()
+            .filter(engraving -> intValue(child(engraving, "Level")) < 4)
+            .map(engraving -> text(engraving, "Name").trim())
+            .filter(name -> !name.isBlank())
+            .distinct()
+            .toList();
+
+        return toJsonNode(engravingNames.stream()
+            .map(name -> relicBookPrice(name, authorization))
+            .toList());
+    }
+
     private Map<String, Object> fetchSnapshot(String authorization, Instant now) {
         List<Map<String, Object>> groups = new ArrayList<>();
 
@@ -84,6 +102,61 @@ public class MarketSnapshotService {
             "updatedAt", now.toString(),
             "cacheTtlMs", MarketSnapshotQueries.CACHE_TTL_MS,
             "groups", groups
+        );
+    }
+
+    private Map<String, Object> relicBookPrice(String engravingName, String authorization) {
+        JsonNode response = client.post(HttpMethod.POST, "/markets/items", authorization, toJsonNode(orderedMap(
+            "CategoryCode", 40000,
+            "ItemGrade", "유물",
+            "ItemName", engravingName,
+            "PageNo", 1,
+            "Sort", "CURRENT_MIN_PRICE",
+            "SortCondition", "ASC"
+        )));
+        String targetName = "유물 " + engravingName + " 각인서";
+        JsonNode selected = arrayItems(child(response, "Items")).stream()
+            .filter(item -> "유물".equals(text(item, "Grade")) && targetName.equals(text(item, "Name")))
+            .findFirst()
+            .orElse(null);
+
+        if (selected == null) {
+            return unavailableBookPrice(engravingName);
+        }
+
+        Integer currentMinPrice = number(selected, "CurrentMinPrice");
+        Integer bundleCount = number(selected, "BundleCount");
+        int normalizedBundleCount = bundleCount == null || bundleCount <= 0 ? 1 : bundleCount;
+        Double unitPrice = currentMinPrice == null ? null : currentMinPrice / (double) normalizedBundleCount;
+
+        return orderedMap(
+            "EngravingName", engravingName,
+            "Name", text(selected, "Name").isBlank() ? targetName : text(selected, "Name"),
+            "Grade", text(selected, "Grade").isBlank() ? "유물" : text(selected, "Grade"),
+            "Icon", text(selected, "Icon"),
+            "CurrentMinPrice", currentMinPrice,
+            "BundleCount", normalizedBundleCount,
+            "UnitPrice", unitPrice,
+            "CostForFiveBooks", unitPrice == null ? null : unitPrice * 5,
+            "RecentPrice", number(selected, "RecentPrice"),
+            "YesterdayAveragePrice", number(selected, "YDayAvgPrice"),
+            "IsAvailable", unitPrice != null
+        );
+    }
+
+    private Map<String, Object> unavailableBookPrice(String engravingName) {
+        return orderedMap(
+            "EngravingName", engravingName,
+            "Name", "유물 " + engravingName + " 각인서",
+            "Grade", "유물",
+            "Icon", "",
+            "CurrentMinPrice", null,
+            "BundleCount", null,
+            "UnitPrice", null,
+            "CostForFiveBooks", null,
+            "RecentPrice", null,
+            "YesterdayAveragePrice", null,
+            "IsAvailable", false
         );
     }
 
@@ -150,6 +223,11 @@ public class MarketSnapshotService {
 
     private Map<String, Object> normalizeAuctionItem(JsonNode item, Map<String, Object> request) {
         Integer buyPrice = firstNumber(child(item, "AuctionInfo"), "BuyPrice", "StartPrice", "BidStartPrice");
+        List<Map<String, Object>> optionDetails = normalizeAuctionOptionDetails(child(item, "Options"));
+        Map<String, Object> gemOption = optionDetails.stream()
+            .filter(option -> String.valueOf(option.get("type")).contains("GEM_SKILL"))
+            .findFirst()
+            .orElse(null);
 
         return orderedMap(
             "key", "auction-" + defaultText(text(item, "Name"), "item") + "-" + request.getOrDefault("CategoryCode", "category") + "-" + (buyPrice == null ? 0 : buyPrice),
@@ -168,8 +246,69 @@ public class MarketSnapshotService {
             "tier", number(item, "Tier"),
             "itemLevel", number(item, "Level"),
             "endDate", text(child(item, "AuctionInfo"), "EndDate"),
-            "options", List.of()
+            "options", optionDetails.stream().map(option -> String.valueOf(option.get("text"))).filter(value -> !value.isBlank()).limit(3).toList(),
+            "optionDetails", optionDetails,
+            "gemLevel", gemLevelFromName(text(item, "Name")),
+            "gemEffectType", gemEffectType(optionDetails),
+            "gemEffectValue", gemOption == null ? null : gemOption.get("value")
         );
+    }
+
+    private List<Map<String, Object>> normalizeAuctionOptionDetails(JsonNode options) {
+        return arrayItems(options).stream()
+            .map(this::normalizeAuctionOption)
+            .filter(option -> !String.valueOf(option.get("text")).isBlank())
+            .limit(3)
+            .toList();
+    }
+
+    private Map<String, Object> normalizeAuctionOption(JsonNode option) {
+        String optionName = text(option, "OptionName");
+        Double value = doubleNumber(option, "Value");
+        boolean isValuePercentage = Boolean.TRUE.equals(booleanValue(option, "IsValuePercentage"));
+        String className = text(option, "ClassName");
+        String valueText = value == null ? "" : (wholeNumberWhenPossible(value) + (isValuePercentage ? "%" : ""));
+        String text = List.of(className, optionName, valueText).stream()
+            .filter(part -> part != null && !part.isBlank())
+            .reduce((left, right) -> left + " " + right)
+            .orElse("");
+
+        return orderedMap(
+            "type", text(option, "Type"),
+            "name", optionName,
+            "value", value,
+            "isValuePercentage", isValuePercentage,
+            "className", className,
+            "text", text
+        );
+    }
+
+    private String gemEffectType(List<Map<String, Object>> optionDetails) {
+        String type = optionDetails.stream()
+            .map(option -> String.valueOf(option.get("type")))
+            .filter(value -> value.contains("GEM_SKILL"))
+            .findFirst()
+            .orElse("");
+
+        if (type.contains("DAMAGE")) {
+            return "damage";
+        }
+
+        if (type.contains("COOLDOWN")) {
+            return "cooldown";
+        }
+
+        if (type.contains("SUPPORT")) {
+            return "support";
+        }
+
+        return type.isBlank() ? "" : "other";
+    }
+
+    private Integer gemLevelFromName(String name) {
+        Matcher matcher = GEM_LEVEL_PATTERN.matcher(name == null ? "" : name);
+
+        return matcher.find() ? Integer.parseInt(matcher.group("level")) : null;
     }
 
     private Map<String, Object> priceDelta(Integer currentPrice, Integer previousPrice) {
@@ -208,6 +347,16 @@ public class MarketSnapshotService {
         return value == null || value.isNull() || !value.isNumber() ? null : value.asInt();
     }
 
+    private Double doubleNumber(JsonNode node, String field) {
+        JsonNode value = child(node, field);
+        return value == null || value.isNull() || !value.isNumber() ? null : value.asDouble();
+    }
+
+    private Boolean booleanValue(JsonNode node, String field) {
+        JsonNode value = child(node, field);
+        return value == null || value.isNull() || !value.isBoolean() ? null : value.asBoolean();
+    }
+
     private Integer firstNumber(JsonNode node, String... fields) {
         for (String field : fields) {
             Integer value = number(node, field);
@@ -231,6 +380,10 @@ public class MarketSnapshotService {
             return value;
         }
         return fallback == null || fallback.isBlank() ? secondFallback : fallback;
+    }
+
+    private Number wholeNumberWhenPossible(double value) {
+        return value % 1 == 0 ? (int) value : value;
     }
 
     private record ResponseWithRequest(Map<String, Object> request, JsonNode response) {

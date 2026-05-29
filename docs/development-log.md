@@ -340,6 +340,13 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - Next.js에는 이관 대상 API Route가 남아 있지 않고, `/api/efficiency/*`는 아직 Next.js 소유의 별도 기능으로 유지한다.
 - JS 상담 prompt/local LLM backend module은 제거했고, 브라우저에서 compact context를 만들기 위한 `sgguContext`만 `lib/ui`로 이동했다.
 - 최종 검증은 `npm test` 24개, `npm run lint`, `npm run build`, `cd backend && ./mvnw test` 58개, `git diff --check` 통과까지 확인했다.
+- 스펙업 효율 모델 전체 이식 설계를 `docs/superpowers/specs/2026-05-29-upgrade-efficiency-model-migration-design.md`에 추가했다.
+- 구현 계획을 `docs/superpowers/plans/2026-05-29-upgrade-efficiency-model-migration.md`에 추가했다.
+- Spring `UpgradeEfficiencyService`가 market snapshot 기반 cost input을 만들고 강화, 전설 아바타, 보석, 각인서 후보를 `upgradeEfficiency.Candidates`로 반환하도록 이식했다.
+- 보석/각인서 후보는 Java `UpgradeCombatPowerEstimator`로 현재값과 변경 후 전투력 추정값을 비교해 gain percent를 산출한다.
+- Spring market snapshot의 경매장 보석 항목에 `gemLevel`, `gemEffectType`, `gemEffectValue`, `optionDetails`를 포함해 보석 후보 계산 입력으로 쓸 수 있게 했다.
+- Spring market service가 현재 각인 중 4단계 미만인 각인의 유물 각인서 5권 비용을 조회해 각인서 후보 계산 입력으로 넘긴다.
+- `CharacterService`가 market snapshot을 upgrade efficiency context에 전달한다. market snapshot 로딩 실패는 캐릭터 조회 실패로 전파하지 않고 `MarketDataStatus: unavailable`로 떨어진다.
 
 ## 앞으로의 기록 방식
 

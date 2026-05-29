@@ -8,6 +8,8 @@ import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
 import com.rosaeng.sangdamso.lostark.LostarkProperties;
+import com.rosaeng.sangdamso.market.MarketSnapshotClient;
+import com.rosaeng.sangdamso.market.MarketSnapshotService;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -62,6 +65,34 @@ class CharacterServiceTest {
         assertThat(response.combatPowerAnalysis().get("Status").asString()).isEqualTo("partial");
         assertThat(response.combatPowerAnalysis().get("OfficialCombatPower").asDouble()).isEqualTo(123456.78);
         assertThat(response.upgradeEfficiency().get("MarketDataStatus").asString()).isEqualTo("unavailable");
+    }
+
+    @Test
+    void usesMarketSnapshotForUpgradeEfficiencyWhenAvailable() {
+        CharacterService service = new CharacterService(
+            client(Map.of(
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/profiles", profile("소울이터"),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/equipment", equipment(
+                    equipmentItem("무기", "+11 세르카 고대 무기", "고대", tooltip(97, "기본 효과", "무기 공격력 +167706"))
+                ),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/avatars", avatars(),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkpassive", arkPassive(),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/arkgrid", node("arkGrid"),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/cards", cards(),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/combat-skills", node("skills"),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/engravings", engravings(3),
+                "/armories/characters/%EB%8F%84%ED%99%94%EA%B0%80/gems", gems()
+            )),
+            marketSnapshotService("token")
+        );
+
+        CharacterResponse response = service.findCharacter("도화가");
+
+        assertThat(response.upgradeEfficiency().get("MarketDataStatus").asString()).isEqualTo("ready");
+        assertThat(response.upgradeEfficiency().get("CostInputs").get("Honing")).isNotNull();
+        JsonNode engravingBooks = response.upgradeEfficiency().get("CostInputs").get("EngravingBooks");
+        assertThat(engravingBooks.size()).isEqualTo(1);
+        assertThat(engravingBooks.get(0).get("CostForFiveBooks").asInt()).isEqualTo(500);
     }
 
     @Test
@@ -192,6 +223,10 @@ class CharacterServiceTest {
         return new CharacterService(client((method, path, authorization) -> responses.get(path)));
     }
 
+    private LostarkApiClient client(Map<String, JsonNode> responses) {
+        return client((method, path, authorization) -> responses.get(path));
+    }
+
     private LostarkApiClient client(LostarkApiClient.RequestExecutor executor) {
         LostarkProperties properties = new LostarkProperties("token", "", "https://example.com", 5, 0);
         return new LostarkApiClient(properties, executor);
@@ -200,6 +235,13 @@ class CharacterServiceTest {
     private LostarkApiClient clientWithBlankAuthorization() {
         LostarkProperties properties = new LostarkProperties("", "", "https://example.com", 5, 0);
         return new LostarkApiClient(properties, (method, path, authorization) -> node(path));
+    }
+
+    private MarketSnapshotService marketSnapshotService(String apiKey) {
+        return new MarketSnapshotService(
+            new LostarkProperties(apiKey, "", "https://example.com", 5, 0),
+            new FakeMarketClient()
+        );
     }
 
     private JsonNode node(String source) {
@@ -264,11 +306,15 @@ class CharacterServiceTest {
     }
 
     private JsonNode engravings() {
+        return engravings(4);
+    }
+
+    private JsonNode engravings(int level) {
         return objectMapper.convertValue(Map.of(
             "ArkPassiveEffects", List.of(Map.of(
                 "AbilityStoneLevel", 1,
                 "Grade", "유물",
-                "Level", 4,
+                "Level", level,
                 "Name", "저주받은 인형",
                 "Description", "적에게 주는 피해가 <FONT COLOR='#99ff99'>20.00%</FONT> 증가한다."
             ))
@@ -341,6 +387,37 @@ class CharacterServiceTest {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new AssertionError("interrupted while waiting for optional requests", exception);
+        }
+    }
+
+    private class FakeMarketClient implements MarketSnapshotClient {
+
+        @Override
+        public JsonNode post(HttpMethod method, String path, String authorization, JsonNode body) {
+            if (body.get("CategoryCode").asInt() == 40000) {
+                return objectMapper.createObjectNode()
+                    .put("TotalCount", 1)
+                    .set("Items", objectMapper.createArrayNode().add(objectMapper.createObjectNode()
+                        .put("CurrentMinPrice", 100)
+                        .put("BundleCount", 1)
+                        .put("Name", "유물 저주받은 인형 각인서")
+                        .put("Grade", "유물")
+                        .put("Icon", "https://example.com/book.png")));
+            }
+
+            String itemName = body.get("ItemName") == null ? "샘플" : body.get("ItemName").asString();
+            String categoryName = body.get("CategoryName") == null ? "샘플" : body.get("CategoryName").asString();
+            String name = itemName.isBlank() ? "전설 " + categoryName : itemName;
+
+            return objectMapper.createObjectNode()
+                .put("TotalCount", 1)
+                .set("Items", objectMapper.createArrayNode().add(objectMapper.createObjectNode()
+                    .put("CurrentMinPrice", 100)
+                    .put("Id", 1)
+                    .put("Name", name)
+                    .put("Grade", "일반")
+                    .put("Icon", "https://example.com/sample.png")
+                    .put("BundleCount", 1)));
         }
     }
 }

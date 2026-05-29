@@ -48,6 +48,30 @@ class MarketSnapshotServiceTest {
         assertThat(first.get("cacheExpiresAt").asString()).isEqualTo("2026-05-29T00:05:00Z");
     }
 
+    @Test
+    void includesGemMetadataFromAuctionOptions() {
+        MarketSnapshotService service = service("token", new GemMarketClient());
+
+        JsonNode snapshot = service.getSnapshot(false);
+        JsonNode gemGroup = null;
+
+        for (JsonNode group : snapshot.get("groups")) {
+            if ("gems".equals(group.get("id").asString())) {
+                gemGroup = group;
+                break;
+            }
+        }
+
+        JsonNode gem = gemGroup.get("items").get(0);
+
+        assertThat(gem.get("gemLevel")).isNotNull();
+        assertThat(gem.get("gemEffectType")).isNotNull();
+        assertThat(gem.get("gemEffectValue")).isNotNull();
+        assertThat(gem.get("gemLevel").asInt()).isEqualTo(7);
+        assertThat(gem.get("gemEffectType").asString()).isEqualTo("damage");
+        assertThat(gem.get("gemEffectValue").asDouble()).isEqualTo(24);
+    }
+
     private MarketSnapshotService service(String apiKey, MarketSnapshotClient client) {
         return new MarketSnapshotService(
             new LostarkProperties(apiKey, "", "https://example.com", 5, 0),
@@ -73,6 +97,31 @@ class MarketSnapshotServiceTest {
                     .put("Grade", "일반")
                     .put("Icon", "https://example.com/sample.png")
                     .put("BundleCount", 1)));
+        }
+    }
+
+    private class GemMarketClient extends FakeMarketClient {
+
+        @Override
+        public JsonNode post(HttpMethod method, String path, String authorization, JsonNode body) {
+            if (body.get("CategoryCode").asInt() != 210000) {
+                return super.post(method, path, authorization, body);
+            }
+
+            return objectMapper.createObjectNode()
+                .put("TotalCount", 1)
+                .set("Items", objectMapper.createArrayNode().add(objectMapper.createObjectNode()
+                    .put("Name", "7레벨 겁화의 보석")
+                    .put("Grade", "고대")
+                    .put("Icon", "https://example.com/gem.png")
+                    .put("Tier", 4)
+                    .set("AuctionInfo", objectMapper.createObjectNode().put("BuyPrice", 100000))
+                    .set("Options", objectMapper.createArrayNode().add(objectMapper.createObjectNode()
+                        .put("Type", "GEM_SKILL_DAMAGE")
+                        .put("OptionName", "라이징 스피어")
+                        .put("Value", 24)
+                        .put("IsValuePercentage", true)
+                        .put("ClassName", "창술사")))));
         }
     }
 }
