@@ -7,6 +7,8 @@ Date: 2026-05-29
 | `/api/characters/{name}` | Spring Boot | Spring Boot | Spring owner active; combat/upgrade summaries are partial |
 | `/api/market/snapshot` | Spring Boot | Spring Boot | Spring owner active |
 | `/api/consult/sggu` | Spring Boot | Spring Boot | Spring owner active |
+| `/api/efficiency/spec-up/{name}` | Spring Boot | Spring Boot | Spring owner active; Next route removed |
+| `/api/efficiency/accessories/recovery` | Next.js | Spring Boot | Follow-up migration |
 
 Rules:
 
