@@ -351,6 +351,22 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - 기존 Next.js `app/api/efficiency/spec-up/[name]/route.js`는 Spring 소유권 활성화 후 제거했다.
 - `/api/efficiency/accessories/recovery`는 별도 후속 이식 대상으로 남겼다.
 
+### 검증
+
+- `cd backend && ./mvnw -Dtest=CharacterServiceTest,MarketSnapshotServiceTest,UpgradeEfficiencyServiceTest test` 17개 통과.
+- `cd backend && ./mvnw -Dtest=LostarkApiClientTest,CharacterServiceTest,AccessoryNormalizerTest,AccessoryAuctionSearchServiceTest,AccessoryEfficiencyServiceTest,SpecUpRecommendationServiceTest,SpecUpEfficiencyServiceTest,SpecUpEfficiencyControllerTest test` 26개 통과.
+- `cd backend && ./mvnw test` 75개 통과.
+- `npm test` 24개 통과.
+- `npm run lint` 통과.
+- `npm run build` 통과.
+- `git diff --check` 통과.
+
+### 다음 작업
+
+- `/api/efficiency/accessories/recovery`를 Spring Boot로 옮겨 효율 페이지의 남은 Next.js API Route를 줄인다.
+- Spring spec-up 추천 결과를 슥구 상담 context에 연결해 Top 5 추천 이유를 대화형으로 설명하게 한다.
+- 붐버 외 실제 캐릭터 fixture를 늘려 악세/보석/각인서 추천 순위의 회귀 검증 범위를 넓힌다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
