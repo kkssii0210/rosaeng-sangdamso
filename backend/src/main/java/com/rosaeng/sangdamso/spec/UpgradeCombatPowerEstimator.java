@@ -10,11 +10,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import tools.jackson.databind.JsonNode;
 
-class UpgradeCombatPowerEstimator {
+public class UpgradeCombatPowerEstimator {
 
     private static final Pattern BASIC_ATTACK_PATTERN = Pattern.compile("기본 공격력(?:은)?\\s*(?<value>[\\d,]+)");
 
-    Double estimate(JsonNode profile, JsonNode equipment, JsonNode engravings, JsonNode gems) {
+    public Double estimate(JsonNode profile, JsonNode equipment, JsonNode engravings, JsonNode gems) {
         double basicAttackPercent = basicAttackPercent(gems);
         Double baseAttack = baseAttack(profile, equipment, basicAttackPercent);
 
@@ -34,7 +34,7 @@ class UpgradeCombatPowerEstimator {
             * multiplier;
     }
 
-    Double engravingCombatPowerPercent(JsonNode engraving) {
+    public Double engravingCombatPowerPercent(JsonNode engraving) {
         String key = cleanKey(textValue(engraving, "Name", "name"));
         double[][] table = UpgradeEfficiencyConstants.ENGRAVING_COMBAT_POWER_TABLES.get(key);
 
