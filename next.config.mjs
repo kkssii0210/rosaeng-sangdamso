@@ -1,7 +1,15 @@
 const springApiBaseUrl = process.env.SPRING_API_BASE_URL || "http://127.0.0.1:8080";
 
-const migratedApiPaths = (process.env.SPRING_API_PATHS || "")
-  .split(",")
+const defaultMigratedApiPaths = [
+  "/api/characters/:path*",
+  "/api/market/snapshot",
+  "/api/consult/sggu",
+  "/api/efficiency/spec-up/:path*",
+  "/api/efficiency/accessories/recovery"
+];
+
+const configuredApiPaths = process.env.SPRING_API_PATHS;
+const migratedApiPaths = (configuredApiPaths ? configuredApiPaths.split(",") : defaultMigratedApiPaths)
   .map((path) => path.trim())
   .filter(Boolean);
 
