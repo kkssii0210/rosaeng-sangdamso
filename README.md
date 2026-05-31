@@ -58,7 +58,7 @@ Next.js 서버가 다른 포트라면 `SGGU_CONSULT_BASE_URL`을 바꾼다.
 SGGU_CONSULT_BASE_URL=http://127.0.0.1:3001 npm run smoke:sggu
 ```
 
-WSL에서 Windows Ollama 서버를 쓰는 경우 `.env.local`의 `LOCAL_LLM_BASE_URL`을 Windows host 주소로 맞춘 뒤 Next.js 서버를 재시작한다.
+WSL에서 Windows Ollama 서버를 쓰는 경우 Spring Boot 실행 전에 `LOCAL_LLM_BASE_URL`을 Windows host 주소로 export하거나 Spring 프로세스 환경 변수로 설정한다.
 
 ## Spring Boot backend
 
