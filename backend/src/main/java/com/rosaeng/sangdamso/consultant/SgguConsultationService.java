@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -18,6 +19,8 @@ import tools.jackson.databind.JsonNode;
 public class SgguConsultationService {
 
     private static final long CACHE_TTL_MS = 5 * 60 * 1000L;
+    private static final int MAX_CACHE_ENTRIES = 128;
+    private static final Set<String> SAFE_ROLES = Set.of("user", "assistant", "system");
 
     private final SgguPromptBuilder promptBuilder;
     private final LocalLlmClient localLlmClient;
@@ -44,7 +47,7 @@ public class SgguConsultationService {
         JsonNode context
     ) {
         SgguConsultationMode safeMode = mode == null ? SgguConsultationMode.MAIN_CHAT : mode;
-        String cacheKey = cacheKey(safeMode, message, context);
+        String cacheKey = cacheKey(safeMode, message, conversation, context);
         long now = Instant.now().toEpochMilli();
         CachedConsultation cached = cache.get(cacheKey);
 
@@ -61,6 +64,7 @@ public class SgguConsultationService {
                 return fallbackComposer.compose(safeMode, message, context);
             }
 
+            cleanupCache(now);
             cache.put(cacheKey, new CachedConsultation(response, now + CACHE_TTL_MS));
             return response;
         } catch (LocalLlmClient.LocalLlmException | SgguResponseParser.InvalidSgguResponseException exception) {
@@ -81,17 +85,63 @@ public class SgguConsultationService {
         }
 
         String responseText = String.join(" ",
-            response.diagnosis(),
             response.recommendation(),
-            response.nextAction(),
             response.displayText()
         );
 
         return responseText.contains(label);
     }
 
-    private String cacheKey(SgguConsultationMode mode, String message, JsonNode context) {
-        return mode.wireValue() + "|" + normalize(message) + "|" + sha256(context == null ? "{}" : context.toString());
+    private void cleanupCache(long now) {
+        cache.entrySet().removeIf(entry -> entry.getValue().expiresAtEpochMs() <= now);
+
+        if (cache.size() >= MAX_CACHE_ENTRIES) {
+            cache.clear();
+        }
+    }
+
+    private String cacheKey(
+        SgguConsultationMode mode,
+        String message,
+        List<Map<String, String>> conversation,
+        JsonNode context
+    ) {
+        return mode.wireValue()
+            + "|" + normalize(message)
+            + "|" + sha256(normalizedConversation(conversation))
+            + "|" + sha256(context == null ? "{}" : context.toString());
+    }
+
+    private String normalizedConversation(List<Map<String, String>> conversation) {
+        if (conversation == null || conversation.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        for (Map<String, String> entry : conversation) {
+            if (!isSafeConversationEntry(entry)) {
+                continue;
+            }
+
+            builder.append(normalize(entry.get("role")))
+                .append('\u001f')
+                .append(normalize(entry.get("content")))
+                .append('\u001e');
+        }
+
+        return builder.toString();
+    }
+
+    private boolean isSafeConversationEntry(Map<String, String> entry) {
+        if (entry == null) {
+            return false;
+        }
+
+        String role = entry.get("role");
+        String content = entry.get("content");
+
+        return SAFE_ROLES.contains(role) && content != null && !content.trim().isEmpty();
     }
 
     private String normalize(String value) {
