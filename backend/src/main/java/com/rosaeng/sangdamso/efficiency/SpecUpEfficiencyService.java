@@ -14,6 +14,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -88,7 +92,9 @@ public class SpecUpEfficiencyService {
         List<String> updatedTimes = new ArrayList<>();
         List<JsonNode> equipment = arrayItems(context.equipment());
 
-        try {
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<PendingAccessorySearch> pendingSearches = new ArrayList<>();
+
             for (int index = 0; index < equipment.size(); index++) {
                 JsonNode item = equipment.get(index);
                 String type = text(item, "Type", "type");
@@ -97,19 +103,31 @@ public class SpecUpEfficiencyService {
                     continue;
                 }
 
-                AccessoryAuctionSearchService.SearchResult result = accessoryAuctionSearchService.searchAccessoryCandidates(
-                    type,
-                    item,
-                    index,
-                    forceRefresh
-                );
+                int equipmentIndex = index;
+                JsonNode currentItem = item;
+                String accessoryType = type;
+                pendingSearches.add(new PendingAccessorySearch(
+                    executor.submit(() -> accessoryAuctionSearchService.searchAccessoryCandidates(
+                        accessoryType,
+                        currentItem,
+                        equipmentIndex,
+                        forceRefresh
+                    )),
+                    equipmentIndex
+                ));
+            }
+
+            for (PendingAccessorySearch pendingSearch : pendingSearches) {
+                AccessoryAuctionSearchService.SearchResult result = await(pendingSearch.future());
                 candidates.addAll(result.items());
+
                 if (result.updatedAt() != null && !result.updatedAt().isBlank()) {
                     updatedTimes.add(result.updatedAt());
                 }
+
                 searchSummary.add(orderedMap(
                     "Type", result.type(),
-                    "EquipmentIndex", index,
+                    "EquipmentIndex", pendingSearch.equipmentIndex(),
                     "SearchOptions", result.searchOptions(),
                     "CandidateCount", result.items().size(),
                     "PagesFetched", result.pagesFetched()
@@ -120,6 +138,23 @@ public class SpecUpEfficiencyService {
         }
 
         return new AccessorySearchBundle(true, candidates, searchSummary, latest(updatedTimes));
+    }
+
+    private AccessoryAuctionSearchService.SearchResult await(Future<AccessoryAuctionSearchService.SearchResult> future) {
+        try {
+            return future.get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(exception);
+        } catch (ExecutionException exception) {
+            Throwable cause = exception.getCause();
+
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+
+            throw new RuntimeException(cause);
+        }
     }
 
     private Map<String, JsonNode> accessoryContext(SpecUpCharacterContext context) {
@@ -189,6 +224,12 @@ public class SpecUpEfficiencyService {
         List<JsonNode> candidates,
         List<Map<String, Object>> searchSummary,
         String updatedAt
+    ) {
+    }
+
+    private record PendingAccessorySearch(
+        Future<AccessoryAuctionSearchService.SearchResult> future,
+        int equipmentIndex
     ) {
     }
 }

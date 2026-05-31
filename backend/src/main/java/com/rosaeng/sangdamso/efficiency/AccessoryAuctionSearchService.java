@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
@@ -17,11 +18,14 @@ import tools.jackson.databind.JsonNode;
 public class AccessoryAuctionSearchService {
 
     static final int MIN_PAGES_PER_TYPE = 3;
-    static final int MAX_PAGES_PER_TYPE = 10;
-    static final int MAX_CANDIDATES_PER_TYPE = 100;
+    static final int MAX_PAGES_PER_TYPE = 4;
+    static final int TARGET_CANDIDATES_PER_TYPE = 24;
+    static final int MAX_CANDIDATES_PER_TYPE = 40;
+    private static final long CACHE_TTL_MS = 5 * 60 * 1000L;
 
     private final LostarkApiClient lostarkApiClient;
     private final AccessoryNormalizer normalizer;
+    private final Map<SearchCacheKey, CachedSearchResult> cache = new ConcurrentHashMap<>();
 
     public AccessoryAuctionSearchService(LostarkApiClient lostarkApiClient, AccessoryNormalizer normalizer) {
         this.lostarkApiClient = lostarkApiClient;
@@ -41,6 +45,17 @@ public class AccessoryAuctionSearchService {
     ) {
         int categoryCode = categoryCode(type);
         List<AccessoryNormalizer.SearchOption> options = normalizer.buildRefinementSearchOptions(currentAccessory);
+        SearchCacheKey cacheKey = new SearchCacheKey(type, equipmentIndex, eligibleOnly, List.copyOf(options));
+        long now = System.currentTimeMillis();
+
+        if (!forceRefresh) {
+            CachedSearchResult cached = cache.get(cacheKey);
+
+            if (cached != null && cached.isFresh(now)) {
+                return cached.result();
+            }
+        }
+
         Map<String, JsonNode> candidatesByKey = new LinkedHashMap<>();
         int pagesFetched = 0;
         int rawItemsSeen = 0;
@@ -48,7 +63,9 @@ public class AccessoryAuctionSearchService {
         String updatedAt = Instant.now().toString();
 
         if (categoryCode == 0) {
-            return new SearchResult(type, List.of(), List.of(), 0, updatedAt);
+            SearchResult result = new SearchResult(type, List.of(), List.of(), 0, updatedAt);
+            cache.put(cacheKey, new CachedSearchResult(result, now + CACHE_TTL_MS));
+            return result;
         }
 
         for (int pageNo = 1; pageNo <= MAX_PAGES_PER_TYPE; pageNo++) {
@@ -75,20 +92,23 @@ public class AccessoryAuctionSearchService {
 
             boolean passedMinimum = pageNo >= MIN_PAGES_PER_TYPE;
             boolean reachedLastPage = rawItems.isEmpty() || rawItemsSeen >= totalCount;
+            boolean reachedTarget = candidatesByKey.size() >= TARGET_CANDIDATES_PER_TYPE;
             boolean reachedLimit = candidatesByKey.size() >= MAX_CANDIDATES_PER_TYPE;
 
-            if (passedMinimum && (reachedLastPage || reachedLimit)) {
+            if (passedMinimum && (reachedLastPage || reachedTarget || reachedLimit)) {
                 break;
             }
         }
 
-        return new SearchResult(
+        SearchResult result = new SearchResult(
             type,
             candidatesByKey.values().stream().limit(MAX_CANDIDATES_PER_TYPE).toList(),
             options.stream().map(AccessoryNormalizer.SearchOption::label).toList(),
             pagesFetched,
             updatedAt
         );
+        cache.put(cacheKey, new CachedSearchResult(result, now + CACHE_TTL_MS));
+        return result;
     }
 
     private Map<String, Object> requestBody(
@@ -145,5 +165,20 @@ public class AccessoryAuctionSearchService {
     }
 
     public record SearchResult(String type, List<JsonNode> items, List<String> searchOptions, int pagesFetched, String updatedAt) {
+    }
+
+    private record SearchCacheKey(
+        String type,
+        int equipmentIndex,
+        boolean eligibleOnly,
+        List<AccessoryNormalizer.SearchOption> options
+    ) {
+    }
+
+    private record CachedSearchResult(SearchResult result, long expiresAtEpochMs) {
+
+        boolean isFresh(long nowEpochMs) {
+            return expiresAtEpochMs > nowEpochMs;
+        }
     }
 }

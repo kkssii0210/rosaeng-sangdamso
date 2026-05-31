@@ -7,6 +7,7 @@ import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkProperties;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -69,6 +70,99 @@ class AccessoryAuctionSearchServiceTest {
         assertThat(recoveryResult.items().get(0).get("BuyPrice").asInt()).isEqualTo(7777);
     }
 
+    @Test
+    void stopsAfterMinimumPagesWhenEnoughCandidatesAreCollected() {
+        List<JsonNode> requests = new ArrayList<>();
+        LostarkApiClient client = new LostarkApiClient(
+            new LostarkProperties("token", "", "https://example.com", 5, 0),
+            (method, path, authorization, body) -> {
+                requests.add(body);
+                return auctionPageWithUniqueItems(body.get("PageNo").asInt(), 12, 1000);
+            }
+        );
+        AccessoryAuctionSearchService service = new AccessoryAuctionSearchService(client, new AccessoryNormalizer());
+
+        AccessoryAuctionSearchService.SearchResult result = service.searchAccessoryCandidates(
+            "목걸이",
+            currentNecklace(),
+            6,
+            false
+        );
+
+        assertThat(result.pagesFetched()).isEqualTo(3);
+        assertThat(result.items()).hasSize(36);
+        assertThat(requests).hasSize(3);
+    }
+
+    @Test
+    void reusesCachedAccessorySearchForSameQuery() {
+        List<JsonNode> requests = new ArrayList<>();
+        LostarkApiClient client = new LostarkApiClient(
+            new LostarkProperties("token", "", "https://example.com", 5, 0),
+            (method, path, authorization, body) -> {
+                requests.add(body);
+                return auctionPage();
+            }
+        );
+        AccessoryAuctionSearchService service = new AccessoryAuctionSearchService(client, new AccessoryNormalizer());
+
+        AccessoryAuctionSearchService.SearchResult first = service.searchAccessoryCandidates("목걸이", currentNecklace(), 6, false);
+        AccessoryAuctionSearchService.SearchResult second = service.searchAccessoryCandidates("목걸이", currentNecklace(), 6, false);
+
+        assertThat(first.items()).hasSize(1);
+        assertThat(second.items()).hasSize(1);
+        assertThat(requests).hasSize(3);
+    }
+
+    @Test
+    void forceRefreshBypassesAccessorySearchCache() {
+        List<JsonNode> requests = new ArrayList<>();
+        LostarkApiClient client = new LostarkApiClient(
+            new LostarkProperties("token", "", "https://example.com", 5, 0),
+            (method, path, authorization, body) -> {
+                requests.add(body);
+                return auctionPage();
+            }
+        );
+        AccessoryAuctionSearchService service = new AccessoryAuctionSearchService(client, new AccessoryNormalizer());
+
+        service.searchAccessoryCandidates("목걸이", currentNecklace(), 6, false);
+        service.searchAccessoryCandidates("목걸이", currentNecklace(), 6, true);
+
+        assertThat(requests).hasSize(6);
+    }
+
+    @Test
+    void capsAccessorySearchPagesWhenCandidatesRemainInsufficient() {
+        List<JsonNode> requests = new ArrayList<>();
+        LostarkApiClient client = new LostarkApiClient(
+            new LostarkProperties("token", "", "https://example.com", 5, 0),
+            (method, path, authorization, body) -> {
+                requests.add(body);
+                return ineligibleAuctionPageWithManyItems(body.get("PageNo").asInt(), 12, 1000);
+            }
+        );
+        AccessoryAuctionSearchService service = new AccessoryAuctionSearchService(client, new AccessoryNormalizer());
+
+        AccessoryAuctionSearchService.SearchResult result = service.searchAccessoryCandidates(
+            "목걸이",
+            currentNecklace(),
+            6,
+            false
+        );
+
+        assertThat(result.pagesFetched()).isEqualTo(4);
+        assertThat(result.items()).isEmpty();
+        assertThat(requests).hasSize(4);
+    }
+
+    private JsonNode currentNecklace() {
+        return toJsonNode(orderedMap(
+            "Type", "목걸이",
+            "DetailSections", List.of(orderedMap("title", "연마 효과", "lines", List.of("추가 피해 +1.50%")))
+        ));
+    }
+
     private JsonNode auctionPage() {
         return toJsonNode(orderedMap(
             "TotalCount", 1,
@@ -92,6 +186,71 @@ class AccessoryAuctionSearchServiceTest {
                     orderedMap("Type", "ARK_PASSIVE", "OptionName", "깨달음", "Value", 13, "IsValuePercentage", false)
                 )
             ))
+        ));
+    }
+
+    private JsonNode auctionPageWithUniqueItems(int pageNo, int itemCount, int totalCount) {
+        List<Map<String, Object>> items = new ArrayList<>();
+
+        for (int offset = 0; offset < itemCount; offset++) {
+            int itemIndex = ((pageNo - 1) * itemCount) + offset;
+            items.add(orderedMap(
+                "Name", "고대 목걸이 " + itemIndex,
+                "Icon", "https://example.com/icon.png",
+                "Grade", "고대",
+                "GradeQuality", 92,
+                "Tier", 4,
+                "Level", 1700,
+                "AuctionInfo", orderedMap(
+                    "BuyPrice", 10000 + itemIndex,
+                    "UpgradeLevel", 3,
+                    "TradeAllowCount", 2,
+                    "EndDate", "2026-05-29T00:00:00Z"
+                ),
+                "Options", List.of(
+                    orderedMap("Type", "STAT", "OptionName", "힘", "Value", 12000 + itemIndex, "IsValuePercentage", false),
+                    orderedMap("Type", "STAT", "OptionName", "치명", "Value", 500, "IsValuePercentage", false),
+                    orderedMap("Type", "ACCESSORY_UPGRADE", "OptionName", "추가 피해", "Value", 1.5, "IsValuePercentage", true),
+                    orderedMap("Type", "ARK_PASSIVE", "OptionName", "깨달음", "Value", 13, "IsValuePercentage", false)
+                )
+            ));
+        }
+
+        return toJsonNode(orderedMap(
+            "TotalCount", totalCount,
+            "Items", items
+        ));
+    }
+
+    private JsonNode ineligibleAuctionPageWithManyItems(int pageNo, int itemCount, int totalCount) {
+        List<Map<String, Object>> items = new ArrayList<>();
+
+        for (int offset = 0; offset < itemCount; offset++) {
+            int itemIndex = ((pageNo - 1) * itemCount) + offset;
+            items.add(orderedMap(
+                "Name", "저품질 목걸이 " + itemIndex,
+                "Icon", "https://example.com/icon.png",
+                "Grade", "고대",
+                "GradeQuality", 70,
+                "Tier", 4,
+                "Level", 1700,
+                "AuctionInfo", orderedMap(
+                    "BuyPrice", 10000 + itemIndex,
+                    "UpgradeLevel", 3,
+                    "TradeAllowCount", 2,
+                    "EndDate", "2026-05-29T00:00:00Z"
+                ),
+                "Options", List.of(
+                    orderedMap("Type", "STAT", "OptionName", "힘", "Value", 12000 + itemIndex, "IsValuePercentage", false),
+                    orderedMap("Type", "ACCESSORY_UPGRADE", "OptionName", "추가 피해", "Value", 1.5, "IsValuePercentage", true),
+                    orderedMap("Type", "ARK_PASSIVE", "OptionName", "깨달음", "Value", 13, "IsValuePercentage", false)
+                )
+            ));
+        }
+
+        return toJsonNode(orderedMap(
+            "TotalCount", totalCount,
+            "Items", items
         ));
     }
 
