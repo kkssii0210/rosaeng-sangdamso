@@ -22,7 +22,12 @@ function recoveryHint(recoveryEstimate) {
     parts.push(`수수료 ${formatGold(feeGold)} 차감`);
   }
 
-  if (tradeCountStatus === "matched" && Number.isFinite(Number(tradeRemainCount))) {
+  if (
+    tradeCountStatus === "matched" &&
+    tradeRemainCount !== null &&
+    tradeRemainCount !== "" &&
+    Number.isFinite(Number(tradeRemainCount))
+  ) {
     parts.push(`거래 ${tradeRemainCount}회 기준`);
   }
 
