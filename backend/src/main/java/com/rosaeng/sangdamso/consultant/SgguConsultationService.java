@@ -21,6 +21,12 @@ public class SgguConsultationService {
     private static final long CACHE_TTL_MS = 5 * 60 * 1000L;
     private static final int MAX_CACHE_ENTRIES = 128;
     private static final Set<String> SAFE_ROLES = Set.of("user", "assistant", "system");
+    private static final List<String> DIRECT_RECOMMENDATION_TERMS = List.of(
+        "부터", "먼저", "우선", "1순위", "추천", "진행", "올리", "보자", "좋"
+    );
+    private static final List<String> REJECTION_TERMS = List.of(
+        "보류", "미루", "후순위", "나중", "제외", "대신", "말고", "아니"
+    );
 
     private final SgguPromptBuilder promptBuilder;
     private final LocalLlmClient localLlmClient;
@@ -84,12 +90,29 @@ public class SgguConsultationService {
             return true;
         }
 
-        String responseText = String.join(" ",
-            response.recommendation(),
-            response.displayText()
+        return directlyRecommendsTopCandidate(response.recommendation(), label);
+    }
+
+    private boolean directlyRecommendsTopCandidate(String recommendation, String label) {
+        String normalizedRecommendation = normalize(recommendation);
+        String normalizedLabel = normalize(label);
+        int labelIndex = normalizedRecommendation.indexOf(normalizedLabel);
+
+        if (labelIndex < 0) {
+            return false;
+        }
+
+        String candidateClause = normalizedRecommendation.substring(
+            Math.max(0, labelIndex - 8),
+            Math.min(normalizedRecommendation.length(), labelIndex + normalizedLabel.length() + 32)
         );
 
-        return responseText.contains(label);
+        return !containsAny(candidateClause, REJECTION_TERMS)
+            && containsAny(candidateClause, DIRECT_RECOMMENDATION_TERMS);
+    }
+
+    private boolean containsAny(String value, List<String> terms) {
+        return terms.stream().anyMatch(value::contains);
     }
 
     private void cleanupCache(long now) {

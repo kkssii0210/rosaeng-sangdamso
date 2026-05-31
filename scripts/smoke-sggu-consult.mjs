@@ -89,6 +89,10 @@ async function main() {
       throw new Error(`200 OK but response did not include required structured field(s): ${missingFields.join(", ")}`);
     }
 
+    if (data.Source.trim().toLowerCase() !== "llm") {
+      throw new Error(`200 OK but consultation Source was "${data.Source}". Expected "llm" so this smoke confirms Ollama connectivity.`);
+    }
+
     console.log("Sggu consult smoke OK");
     console.log(`Provider: ${data.Provider || "unknown"}`);
     console.log(`Model: ${data.Model || "unknown"}`);
