@@ -6,7 +6,8 @@ import {
   appendUserMessage,
   buildConsultRequestBody,
   createInitialConsultMessages,
-  getConsultErrorMessage
+  getConsultErrorMessage,
+  getConsultDisplayText
 } from "../lib/ui/sgguConsultantState.js";
 
 test("creates lookup mode starter message", () => {
@@ -64,6 +65,7 @@ test("builds compact consult request body without raw armory payload", () => {
   });
 
   assert.equal(body.message, "뭐부터 올려?");
+  assert.equal(body.mode, "main-chat");
   assert.deepEqual(body.conversation, [{ role: "sggu", text: "장비를 봤어." }]);
   assert.equal(body.armory, undefined);
   assert.equal(body.specUpRecommendation, undefined);
@@ -71,4 +73,26 @@ test("builds compact consult request body without raw armory payload", () => {
   assert.equal(body.context.keyEquipment[0].name, "+11 세르카 고대 무기");
   assert.equal(body.context.topSpecUps[0].label, "무기 11->12");
   assert.doesNotMatch(JSON.stringify(body), /raw tooltip/);
+});
+
+test("builds consult request body with explicit mode", () => {
+  const body = buildConsultRequestBody({
+    message: "효율 요약해줘",
+    mode: "efficiency-summary"
+  });
+
+  assert.equal(body.mode, "efficiency-summary");
+});
+
+test("extracts structured display text before legacy answers", () => {
+  assert.equal(
+    getConsultDisplayText({
+      DisplayText: " 지금은 보석부터 보는 게 좋아. ",
+      Answer: "legacy answer"
+    }),
+    "지금은 보석부터 보는 게 좋아."
+  );
+  assert.equal(getConsultDisplayText({ DisplayText: " ", Answer: " legacy answer " }), "legacy answer");
+  assert.equal(getConsultDisplayText({ DisplayText: "", Answer: "" }), "");
+  assert.equal(getConsultDisplayText(null), "");
 });

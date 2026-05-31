@@ -13,7 +13,8 @@ import {
   appendUserMessage,
   buildConsultRequestBody,
   createInitialConsultMessages,
-  getConsultErrorMessage
+  getConsultErrorMessage,
+  getConsultDisplayText
 } from "../lib/ui/sgguConsultantState.js";
 
 const apiErrorMessages = {
@@ -124,7 +125,7 @@ export default function Home() {
         throw new Error(getConsultErrorMessage(data));
       }
 
-      const answer = typeof data?.Answer === "string" ? data.Answer.trim() : "";
+      const answer = getConsultDisplayText(data);
 
       if (!answer) {
         throw new Error("슥구 상담 응답을 불러오지 못했어.");
