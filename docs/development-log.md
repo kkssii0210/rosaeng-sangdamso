@@ -349,7 +349,7 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - `CharacterService`가 market snapshot을 upgrade efficiency context에 전달한다. market snapshot 로딩 실패는 캐릭터 조회 실패로 전파하지 않고 `MarketDataStatus: unavailable`로 떨어진다.
 - Spring `GET /api/efficiency/spec-up/{name}`가 악세 교체 추천과 강화/보석/각인/아바타 후보를 통합해 Top 5를 반환하도록 추가했다.
 - 기존 Next.js `app/api/efficiency/spec-up/[name]/route.js`는 Spring 소유권 활성화 후 제거했다.
-- `/api/efficiency/accessories/recovery`는 2026-05-31 작업에서 Spring Boot로 이식해 남은 Next.js API Route를 제거했다.
+- `/api/efficiency/accessories/recovery`는 2026-05-31 작업에서 Spring Boot로 이식해 API Route 잔여 파일을 제거했다.
 
 ### 검증
 
