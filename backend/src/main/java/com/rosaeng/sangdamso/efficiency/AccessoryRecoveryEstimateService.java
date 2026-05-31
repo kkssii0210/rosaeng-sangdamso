@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
@@ -17,9 +19,15 @@ public class AccessoryRecoveryEstimateService {
 
     private static final double SALE_FEE_RATE = 0.05;
     private static final String METHOD_EXACT = "exact";
+    private static final String METHOD_APPROXIMATE = "approximateImpactRefinement";
+    private static final String METHOD_UNAVAILABLE = "unavailable";
     private static final String METHOD_UNTRADABLE = "untradable";
+    private static final String CAVEAT_CODE_APPROXIMATE = "APPROXIMATE_IMPACT_REFINEMENT";
+    private static final String CAVEAT_CODE_NO_APPROXIMATE_EVIDENCE = "NO_APPROXIMATE_EVIDENCE";
     private static final String CAVEAT_CODE_UNTRADABLE = "UNTRADABLE";
     private static final String TRADE_COUNT_UNKNOWN_CAVEAT = "현재 악세 거래 가능 횟수를 확인하지 못해 거래횟수별 시세 차이는 반영하지 못했어.";
+    private static final String APPROXIMATE_CAVEAT = "완전 동일 매물이 없어 딜러 전투력 영향 연마효과와 거래횟수가 같은 유사 주스탯 매물의 최저가로 보수 추정했어.";
+    private static final String APPROXIMATE_UNKNOWN_TRADE_COUNT_CAVEAT = "완전 동일 매물이 없어 딜러 전투력 영향 연마효과와 유사 주스탯 매물의 최저가로 보수 추정했어.";
     private static final String UNTRADABLE_CAVEAT = "현재 악세 거래 가능 횟수가 0회라 회수금을 0으로 계산했어.";
 
     private final AccessoryNormalizer normalizer;
@@ -42,37 +50,40 @@ public class AccessoryRecoveryEstimateService {
             && summary.interquartileRange() != null
             && summary.interquartileRange() / (double) summary.medianPrice() <= 0.35;
         boolean highConfidence = summary.count() >= 3 && stableSpread;
+        EstimateBasis basis = highConfidence
+            ? new EstimateBasis(METHOD_EXACT, "high", summary.count(), summary.medianPrice(), null, tradeContext.caveat(), exactFacts())
+            : approximateBasis(currentAccessory, auctionCandidates, currentTradeRemainCount, tradeContext, summary);
 
-        if (!highConfidence) {
-            return lowConfidenceEstimate(summary, tradeContext);
+        if (basis == null) {
+            return unavailableEstimate(tradeContext);
         }
 
         Double buyPrice = positiveNumber(recommendation, "BuyPrice", "buyPrice");
         Double gainPercent = positiveNumber(recommendation, "CombatPowerGainPercent", "combatPowerGainPercent");
 
         if (buyPrice == null || gainPercent == null) {
-            return lowConfidenceEstimate(summary, tradeContext);
+            return estimateWithoutNetCost(basis, tradeContext);
         }
 
-        Recovery recovery = recovery(summary.medianPrice());
+        Recovery recovery = recovery(basis.grossRecoveryGold());
         long netCost = Math.max(0L, Math.round(buyPrice) - recovery.netRecoveryGold());
 
         return toJsonNode(orderedMap(
             "Status", "ready",
-            "Method", METHOD_EXACT,
-            "Confidence", "high",
-            "EvidenceCount", summary.count(),
+            "Method", basis.method(),
+            "Confidence", basis.confidence(),
+            "EvidenceCount", basis.evidenceCount(),
             "EstimatedGrossRecoveryGold", recovery.grossRecoveryGold(),
             "EstimatedFeeGold", recovery.feeGold(),
             "EstimatedRecoveryGold", recovery.netRecoveryGold(),
             "FeeRate", SALE_FEE_RATE,
             "TradeCountStatus", tradeContext.status(),
             "TradeRemainCount", tradeContext.tradeRemainCount(),
-            "Caveat", tradeContext.caveat(),
-            "CaveatCode", null,
-            "Facts", exactFacts(),
+            "CaveatCode", basis.caveatCode(),
+            "Caveat", basis.caveat(),
             "NetCostGold", netCost,
-            "NetGoldPerOnePercentCombatPower", Math.round(netCost / gainPercent)
+            "NetGoldPerOnePercentCombatPower", Math.round(netCost / gainPercent),
+            "Facts", basis.facts()
         ));
     }
 
@@ -100,7 +111,7 @@ public class AccessoryRecoveryEstimateService {
         Integer currentTradeRemainCount
     ) {
         if (currentAccessory == null || currentAccessory.isNull()) {
-            return new Summary(0, null, null);
+            return new Summary(0, null, null, List.of());
         }
 
         String currentFingerprint = normalizer.fingerprint(currentAccessory);
@@ -108,6 +119,10 @@ public class AccessoryRecoveryEstimateService {
 
         for (JsonNode candidate : arrayItems(auctionCandidates)) {
             if (!currentFingerprint.equals(normalizer.fingerprint(candidate))) {
+                continue;
+            }
+
+            if (!matchesKnownGradeAndTier(currentAccessory, candidate)) {
                 continue;
             }
 
@@ -136,28 +151,28 @@ public class AccessoryRecoveryEstimateService {
             ? null
             : Math.toIntExact(Math.round(thirdQuartile - firstQuartile));
 
-        return new Summary(prices.size(), medianPrice, interquartileRange);
+        return new Summary(prices.size(), medianPrice, interquartileRange, List.copyOf(prices));
     }
 
-    private JsonNode lowConfidenceEstimate(Summary summary, TradeContext tradeContext) {
-        Recovery recovery = recovery(summary.medianPrice());
+    private JsonNode estimateWithoutNetCost(EstimateBasis basis, TradeContext tradeContext) {
+        Recovery recovery = recovery(basis.grossRecoveryGold());
 
         return toJsonNode(orderedMap(
             "Status", "lowConfidence",
-            "Method", METHOD_EXACT,
+            "Method", basis.method(),
             "Confidence", "low",
-            "EvidenceCount", summary.count(),
+            "EvidenceCount", basis.evidenceCount(),
             "EstimatedGrossRecoveryGold", recovery.grossRecoveryGold(),
             "EstimatedFeeGold", recovery.feeGold(),
             "EstimatedRecoveryGold", recovery.netRecoveryGold(),
             "FeeRate", SALE_FEE_RATE,
             "TradeCountStatus", tradeContext.status(),
             "TradeRemainCount", tradeContext.tradeRemainCount(),
-            "Caveat", tradeContext.caveat(),
-            "CaveatCode", null,
-            "Facts", exactFacts(),
+            "CaveatCode", basis.caveatCode(),
+            "Caveat", basis.caveat(),
             "NetCostGold", null,
-            "NetGoldPerOnePercentCombatPower", null
+            "NetGoldPerOnePercentCombatPower", null,
+            "Facts", basis.facts()
         ));
     }
 
@@ -221,6 +236,215 @@ public class AccessoryRecoveryEstimateService {
         );
     }
 
+    private JsonNode unavailableEstimate(TradeContext tradeContext) {
+        return toJsonNode(orderedMap(
+            "Status", "lowConfidence",
+            "Method", METHOD_UNAVAILABLE,
+            "Confidence", "low",
+            "EvidenceCount", 0,
+            "EstimatedGrossRecoveryGold", null,
+            "EstimatedFeeGold", null,
+            "EstimatedRecoveryGold", null,
+            "FeeRate", SALE_FEE_RATE,
+            "TradeCountStatus", tradeContext.status(),
+            "TradeRemainCount", tradeContext.tradeRemainCount(),
+            "CaveatCode", CAVEAT_CODE_NO_APPROXIMATE_EVIDENCE,
+            "Caveat", tradeContext.caveat(),
+            "NetCostGold", null,
+            "NetGoldPerOnePercentCombatPower", null,
+            "Facts", orderedMap(
+                "role", "dealer",
+                "pricePolicy", "none",
+                "feeRate", SALE_FEE_RATE
+            )
+        ));
+    }
+
+    private Integer mainStatValue(JsonNode accessory) {
+        Integer value = positiveInteger(accessory, "MainStatValue", "mainStatValue");
+        return value == null ? sectionValue(accessory, "기본 효과") : value;
+    }
+
+    private boolean matchesKnownGradeAndTier(JsonNode currentAccessory, JsonNode candidate) {
+        String currentGrade = text(currentAccessory, "Grade", "grade");
+
+        if (!currentGrade.isBlank() && !currentGrade.equals(text(candidate, "Grade", "grade"))) {
+            return false;
+        }
+
+        Integer currentTier = nonNegativeInteger(currentAccessory, "Tier", "tier");
+
+        if (currentTier != null && !currentTier.equals(nonNegativeInteger(candidate, "Tier", "tier"))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private Integer sectionValue(JsonNode accessory, String sectionTitle) {
+        for (JsonNode section : arrayItems(child(accessory, "DetailSections"))) {
+            String title = text(section, "title", "Title");
+
+            if (!sectionTitle.equals(title)) {
+                continue;
+            }
+
+            Integer value = firstLineValue(section, "lines");
+
+            if (value != null) {
+                return value;
+            }
+
+            return firstLineValue(section, "Lines");
+        }
+
+        return null;
+    }
+
+    private Integer firstLineValue(JsonNode section, String field) {
+        List<JsonNode> lines = arrayItems(child(section, field));
+
+        if (lines.isEmpty()) {
+            return null;
+        }
+
+        return positiveIntegerFromText(lines.get(0).asString());
+    }
+
+    private Integer positiveIntegerFromText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        Matcher matcher = Pattern.compile("\\+\\s*(?<value>\\d+(?:,\\d{3})*)").matcher(value);
+
+        if (!matcher.find()) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(matcher.group("value").replace(",", ""));
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private String text(JsonNode node, String... keys) {
+        if (node == null || node.isNull()) {
+            return "";
+        }
+
+        for (String key : keys) {
+            JsonNode value = child(node, key);
+
+            if (value != null && !value.isNull() && !value.asString().isBlank()) {
+                return value.asString();
+            }
+        }
+
+        return "";
+    }
+
+    private EstimateBasis approximateBasis(
+        JsonNode currentAccessory,
+        JsonNode auctionCandidates,
+        Integer currentTradeRemainCount,
+        TradeContext tradeContext,
+        Summary exactSummary
+    ) {
+        String currentType = text(currentAccessory, "Type", "type");
+        List<String> currentSignature = normalizer.dealerImpactRefinementSignature(currentAccessory);
+        Integer currentMainStat = mainStatValue(currentAccessory);
+
+        if (currentType.isBlank() || currentSignature.isEmpty() || currentMainStat == null) {
+            return null;
+        }
+
+        List<ApproximateCandidate> candidates = new ArrayList<>();
+
+        for (JsonNode candidate : arrayItems(auctionCandidates)) {
+            Integer buyPrice = positiveInteger(candidate, "BuyPrice", "buyPrice");
+            Integer candidateMainStat = mainStatValue(candidate);
+
+            if (buyPrice == null || candidateMainStat == null) {
+                continue;
+            }
+
+            if (!currentType.equals(text(candidate, "Type", "type"))) {
+                continue;
+            }
+
+            if (!matchesKnownGradeAndTier(currentAccessory, candidate)) {
+                continue;
+            }
+
+            if (currentTradeRemainCount != null) {
+                Integer candidateTradeRemainCount = nonNegativeInteger(candidate, "TradeRemainCount", "tradeRemainCount");
+
+                if (!currentTradeRemainCount.equals(candidateTradeRemainCount)) {
+                    continue;
+                }
+            }
+
+            if (!currentSignature.equals(normalizer.dealerImpactRefinementSignature(candidate))) {
+                continue;
+            }
+
+            candidates.add(new ApproximateCandidate(buyPrice, Math.abs(candidateMainStat - currentMainStat)));
+        }
+
+        if (candidates.isEmpty()) {
+            return null;
+        }
+
+        int minDelta = candidates.stream().mapToInt(ApproximateCandidate::mainStatDelta).min().orElse(0);
+        int nearThreshold = Math.max(minDelta, Math.toIntExact(Math.round(currentMainStat * 0.01)));
+        List<ApproximateCandidate> nearCandidates = candidates.stream()
+            .filter(candidate -> candidate.mainStatDelta() <= nearThreshold)
+            .toList();
+
+        if (nearCandidates.isEmpty()) {
+            return null;
+        }
+
+        int approxGross = nearCandidates.stream().mapToInt(ApproximateCandidate::buyPrice).min().orElse(0);
+        Integer exactSparseGross = exactSummary.prices().isEmpty()
+            ? null
+            : exactSummary.prices().stream().mapToInt(Integer::intValue).min().orElse(approxGross);
+        boolean usedExactSparseCeiling = exactSparseGross != null && exactSparseGross <= approxGross;
+        int grossRecoveryGold = usedExactSparseCeiling ? exactSparseGross : approxGross;
+        int selectedMainStatDelta = usedExactSparseCeiling
+            ? 0
+            : nearCandidates.stream()
+                .filter(candidate -> candidate.buyPrice() == approxGross)
+                .mapToInt(ApproximateCandidate::mainStatDelta)
+                .min()
+                .orElse(minDelta);
+        String caveat = currentTradeRemainCount == null
+            ? APPROXIMATE_UNKNOWN_TRADE_COUNT_CAVEAT + " " + tradeContext.caveat()
+            : APPROXIMATE_CAVEAT;
+
+        return new EstimateBasis(
+            METHOD_APPROXIMATE,
+            nearCandidates.size() >= 3 ? "conservative" : "low",
+            nearCandidates.size(),
+            grossRecoveryGold,
+            CAVEAT_CODE_APPROXIMATE,
+            caveat,
+            orderedMap(
+                "role", "dealer",
+                "pricePolicy", "minimumNearMainStatActiveAuction",
+                "impactRefinementSignature", currentSignature,
+                "exactSparseEvidenceCount", exactSummary.count(),
+                "usedExactSparseCeiling", usedExactSparseCeiling,
+                "mainStatDelta", selectedMainStatDelta,
+                "nearMainStatThreshold", nearThreshold,
+                "tradeCountMatched", currentTradeRemainCount != null,
+                "feeRate", SALE_FEE_RATE
+            )
+        );
+    }
+
     private Integer positiveInteger(JsonNode node, String... keys) {
         Double value = positiveNumber(node, keys);
 
@@ -279,7 +503,21 @@ public class AccessoryRecoveryEstimateService {
         return number != null && Double.isFinite(number) ? number : null;
     }
 
-    private record Summary(int count, Integer medianPrice, Integer interquartileRange) {
+    private record Summary(int count, Integer medianPrice, Integer interquartileRange, List<Integer> prices) {
+    }
+
+    private record EstimateBasis(
+        String method,
+        String confidence,
+        int evidenceCount,
+        Integer grossRecoveryGold,
+        String caveatCode,
+        String caveat,
+        Map<String, Object> facts
+    ) {
+    }
+
+    private record ApproximateCandidate(int buyPrice, int mainStatDelta) {
     }
 
     private record Recovery(Integer grossRecoveryGold, Integer feeGold, Integer netRecoveryGold) {
