@@ -24,11 +24,20 @@ function buildFallbackConsultationResponse(errorMessage) {
   };
 }
 
-function ConsultationField({ label, value }) {
-  if (!value) {
-    return null;
-  }
+const consultationSectionFallbacks = {
+  Diagnosis: "계산 결과를 기준으로 현재 스펙업 후보를 다시 정리했어.",
+  Recommendation: "효율 점수가 높은 후보부터 순비용과 전투력 상승폭을 함께 비교해줘.",
+  Caution: "실제 구매 전에는 경매장 가격과 거래 가능 횟수를 다시 확인해줘.",
+  NextAction: "상위 추천 후보 중 예산에 맞는 항목부터 실제 매물과 비교해보자."
+};
 
+function consultationSectionText(response, key) {
+  const value = typeof response?.[key] === "string" ? response[key].trim() : "";
+
+  return value || consultationSectionFallbacks[key];
+}
+
+function ConsultationField({ label, value }) {
   return (
     <div>
       <span>{label}</span>
@@ -54,10 +63,10 @@ function EfficiencyConsultationCard({ consultation }) {
         </div>
       ) : (
         <div className="efficiency-consultation-grid">
-          <ConsultationField label="Diagnosis" value={response.Diagnosis} />
-          <ConsultationField label="Recommendation" value={response.Recommendation} />
-          <ConsultationField label="Caution" value={response.Caution} />
-          <ConsultationField label="NextAction" value={response.NextAction} />
+          <ConsultationField label="Diagnosis" value={consultationSectionText(response, "Diagnosis")} />
+          <ConsultationField label="Recommendation" value={consultationSectionText(response, "Recommendation")} />
+          <ConsultationField label="Caution" value={consultationSectionText(response, "Caution")} />
+          <ConsultationField label="NextAction" value={consultationSectionText(response, "NextAction")} />
         </div>
       )}
     </section>
