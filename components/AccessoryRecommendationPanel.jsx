@@ -11,6 +11,28 @@ function formatPercent(value) {
   return Number.isFinite(number) ? `${number.toFixed(4)}%` : "-";
 }
 
+function recoveryHint(recoveryEstimate) {
+  const parts = [];
+  const feeGold = valueOf(recoveryEstimate, ["EstimatedFeeGold", "estimatedFeeGold"], null);
+  const tradeCountStatus = valueOf(recoveryEstimate, ["TradeCountStatus", "tradeCountStatus"], "");
+  const tradeRemainCount = valueOf(recoveryEstimate, ["TradeRemainCount", "tradeRemainCount"], null);
+  const caveat = valueOf(recoveryEstimate, ["Caveat", "caveat"], "");
+
+  if (Number.isFinite(Number(feeGold)) && Number(feeGold) > 0) {
+    parts.push(`수수료 ${formatGold(feeGold)} 차감`);
+  }
+
+  if (tradeCountStatus === "matched" && Number.isFinite(Number(tradeRemainCount))) {
+    parts.push(`거래 ${tradeRemainCount}회 기준`);
+  }
+
+  if (caveat) {
+    parts.push(caveat);
+  }
+
+  return parts.join(" · ");
+}
+
 function AccessorySummary({ title, accessory, mainStatName }) {
   const display = buildAccessoryDisplay({ accessory, mainStatName });
 
@@ -99,10 +121,17 @@ export default function AccessoryRecommendationPanel({ recommendation, recovery,
         {isRecoveryLoading ? (
           <span>현재 악세 예상 회수가 계산 중</span>
         ) : recovery?.RecoveryEstimate?.Status === "ready" ? (
-          <span>
-            예상 회수가 {formatGold(recovery.RecoveryEstimate.EstimatedRecoveryGold)} · 순비용 기준 +1%당{" "}
-            {formatGold(recovery.RecoveryEstimate.NetGoldPerOnePercentCombatPower)}
-          </span>
+          (() => {
+            const hint = recoveryHint(recovery.RecoveryEstimate);
+
+            return (
+              <span>
+                예상 회수가 {formatGold(recovery.RecoveryEstimate.EstimatedRecoveryGold)} · 순비용 기준 +1%당{" "}
+                {formatGold(recovery.RecoveryEstimate.NetGoldPerOnePercentCombatPower)}
+                {hint ? ` · ${hint}` : ""}
+              </span>
+            );
+          })()
         ) : recovery ? (
           <span>근거 부족으로 순비용 효율을 표시하지 않습니다</span>
         ) : (
