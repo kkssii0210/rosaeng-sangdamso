@@ -58,6 +58,23 @@ class ConsultantControllerTest {
     }
 
     @Test
+    void rejectsBlankCharacterProfileBeforeCallingConsultationService() throws Exception {
+        mockMvc.perform(post("/api/consult/sggu")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "message": "상담해줘",
+                      "armory": {"profile": {}}
+                    }
+                    """))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("INVALID_ARMORY"))
+            .andExpect(jsonPath("$.message").value("캐릭터를 먼저 조회해줘."));
+
+        assertThat(consultationService.message).isNull();
+    }
+
+    @Test
     void returnsStructuredMainChatResponseWithCompactContext() throws Exception {
         mockMvc.perform(post("/api/consult/sggu")
                 .contentType(MediaType.APPLICATION_JSON)
