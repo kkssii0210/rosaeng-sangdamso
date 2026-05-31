@@ -6,6 +6,7 @@ import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.or
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.toJsonNode;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -135,6 +136,22 @@ public class AccessoryNormalizer {
         );
     }
 
+    public List<String> dealerImpactRefinementSignature(JsonNode accessory) {
+        String type = text(accessory, "Type", "type");
+        List<String> signature = new ArrayList<>();
+
+        for (String line : refinementLinesOf(accessory)) {
+            String signatureLine = dealerImpactRefinementSignatureLine(type, line);
+
+            if (!signatureLine.isBlank() && !signature.contains(signatureLine)) {
+                signature.add(signatureLine);
+            }
+        }
+
+        Collections.sort(signature);
+        return signature;
+    }
+
     private int resolvedMainStatValue(JsonNode accessory) {
         int value = intValue(accessory, "MainStatValue", "mainStatValue");
 
@@ -212,6 +229,29 @@ public class AccessoryNormalizer {
         }
 
         return null;
+    }
+
+    private String dealerImpactRefinementSignatureLine(String type, String line) {
+        String normalizedLine = line.replaceFirst("^(상|중|하)\\s+", "").replaceAll("\\s+", " ").trim();
+
+        for (Rule rule : REFINEMENT_RULES) {
+            if (!rule.type().isBlank() && !rule.type().equals(type)) {
+                continue;
+            }
+
+            Matcher matcher = rule.pattern().matcher(normalizedLine);
+
+            if (!matcher.find()) {
+                continue;
+            }
+
+            double parsedValue = Double.parseDouble(matcher.group("value"));
+            int normalizedValue = rule.percentage() ? (int) Math.round(parsedValue * 100) : (int) Math.round(parsedValue);
+            String labelValue = rule.percentage() ? formatPercent(normalizedValue / 100.0) : formatWhole(normalizedValue);
+            return rule.name() + " +" + labelValue;
+        }
+
+        return "";
     }
 
     private List<String> refinementLinesOf(JsonNode accessory) {

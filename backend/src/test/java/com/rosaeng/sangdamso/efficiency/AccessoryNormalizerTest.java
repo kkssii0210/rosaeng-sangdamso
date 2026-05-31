@@ -107,6 +107,96 @@ class AccessoryNormalizerTest {
         assertThat(normalizer.fingerprint(detailOnly)).isEqualTo(normalizer.fingerprint(explicit));
     }
 
+    @Test
+    void buildsDealerImpactRefinementSignatureAndIgnoresNonImpactLines() {
+        JsonNode accessory = toJsonNode(orderedMap(
+            "Type", "목걸이",
+            "DetailSections", List.of(orderedMap(
+                "title", "연마 효과",
+                "lines", List.of(
+                    "최대 생명력 +4000",
+                    "추가 피해 +1.50%",
+                    "적에게 주는 피해 +0.90%"
+                )
+            ))
+        ));
+
+        List<String> signature = normalizer.dealerImpactRefinementSignature(accessory);
+
+        assertThat(signature).containsExactly("적에게 주는 피해 +0.90%", "추가 피해 +1.50%");
+    }
+
+    @Test
+    void buildsDealerImpactRefinementSignatureForFlatAttackLines() {
+        JsonNode accessory = toJsonNode(orderedMap(
+            "Type", "귀걸이",
+            "DetailSections", List.of(orderedMap(
+                "title", "연마 효과",
+                "lines", List.of(
+                    "무기 공격력 +300",
+                    "공격력 +1.55%",
+                    "최대 생명력 +4000"
+                )
+            ))
+        ));
+
+        List<String> signature = normalizer.dealerImpactRefinementSignature(accessory);
+
+        assertThat(signature).containsExactly("공격력 +1.55%", "무기 공격력 +300");
+    }
+
+    @Test
+    void buildsDealerImpactRefinementSignatureForRingImpactLines() {
+        JsonNode accessory = toJsonNode(orderedMap(
+            "Type", "반지",
+            "DetailSections", List.of(orderedMap(
+                "title", "연마 효과",
+                "lines", List.of(
+                    "치명타 피해 +4.00%",
+                    "치명타 적중률 +1.55%",
+                    "최대 생명력 +4000"
+                )
+            ))
+        ));
+
+        List<String> signature = normalizer.dealerImpactRefinementSignature(accessory);
+
+        assertThat(signature).containsExactly("치명타 적중률 +1.55%", "치명타 피해 +4.00%");
+    }
+
+    @Test
+    void deduplicatesDealerImpactRefinementSignatureAfterRankAndWhitespaceNormalization() {
+        JsonNode accessory = toJsonNode(orderedMap(
+            "Type", "목걸이",
+            "DetailSections", List.of(orderedMap(
+                "title", "연마 효과",
+                "lines", List.of(
+                    "상   추가 피해   +1.50%",
+                    "중 추가 피해 +1.50%",
+                    "하 추가 피해 +1.50%",
+                    "추가 피해 +1.50%"
+                )
+            ))
+        ));
+
+        List<String> signature = normalizer.dealerImpactRefinementSignature(accessory);
+
+        assertThat(signature).containsExactly("추가 피해 +1.50%");
+    }
+
+    @Test
+    void returnsEmptyDealerImpactSignatureWhenOnlyNonImpactLinesExist() {
+        JsonNode accessory = toJsonNode(orderedMap(
+            "Type", "반지",
+            "DetailSections", List.of(orderedMap(
+                "title", "연마 효과",
+                "lines", List.of("최대 생명력 +4000", "방어력 +1200")
+            ))
+        ));
+
+        assertThat(normalizer.dealerImpactRefinementSignature(accessory)).isEmpty();
+    }
+
     private JsonNode toJsonNode(Object value) {
         return objectMapper.convertValue(value, JsonNode.class);
     }
