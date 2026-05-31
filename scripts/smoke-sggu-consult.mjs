@@ -49,6 +49,7 @@ function buildRequestBody(message) {
   };
 
   return {
+    mode: "main-chat",
     message,
     conversation: [
       { role: "user", content: "현재 캐릭터 상태를 보고 우선순위를 알려줘." },
@@ -81,14 +82,18 @@ async function main() {
       throw new Error(`${response.status} ${data?.code || "UNKNOWN_ERROR"}: ${data?.message || "No response message"}`);
     }
 
-    if (typeof data?.Answer !== "string" || !data.Answer.trim()) {
-      throw new Error("200 OK but response did not include Answer text");
+    const requiredFields = ["DisplayText", "Mode", "Source", "Diagnosis", "Recommendation", "NextAction"];
+    const missingFields = requiredFields.filter((field) => typeof data?.[field] !== "string" || !data[field].trim());
+
+    if (missingFields.length) {
+      throw new Error(`200 OK but response did not include required structured field(s): ${missingFields.join(", ")}`);
     }
 
     console.log("Sggu consult smoke OK");
     console.log(`Provider: ${data.Provider || "unknown"}`);
     console.log(`Model: ${data.Model || "unknown"}`);
-    console.log(`Answer: ${data.Answer.trim()}`);
+    console.log(`Source: ${data.Source.trim()}`);
+    console.log(`DisplayText: ${data.DisplayText.trim()}`);
   } finally {
     clearTimeout(timeout);
   }

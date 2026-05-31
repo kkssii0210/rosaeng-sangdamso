@@ -39,7 +39,7 @@ npm run build
 
 ## 로컬 LLM smoke test
 
-`npm run smoke:sggu`는 실행 중인 Next.js 서버의 `POST /api/consult/sggu`를 호출해 Spring Boot 상담 API와 Ollama 연결을 함께 확인한다.
+`npm run smoke:sggu`는 실행 중인 Next.js 서버의 `POST /api/consult/sggu`를 호출해 Spring Boot 상담 API, 구조화된 상담 응답, Ollama 연결을 함께 확인한다.
 
 ```bash
 ollama serve
