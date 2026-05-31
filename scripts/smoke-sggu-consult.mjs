@@ -100,6 +100,6 @@ main().catch((error) => {
   console.error("Sggu consult smoke FAILED");
   console.error(message);
   console.error("");
-  console.error("Check: Next dev server is running, Ollama is running, and LOCAL_LLM_BASE_URL points to Ollama from the Next.js process.");
+  console.error("Check: Next dev server is running, Spring Boot is running, Ollama is running, and LOCAL_LLM_BASE_URL points to Ollama from the Spring Boot process.");
   process.exitCode = 1;
 });
