@@ -2,7 +2,6 @@ package com.rosaeng.sangdamso.consultant;
 
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.child;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.isObject;
-import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.orderedMap;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.text;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.toJsonNode;
 
@@ -21,23 +20,21 @@ import tools.jackson.databind.JsonNode;
 public class ConsultantController {
 
     private final SgguContextBuilder contextBuilder;
-    private final SgguPromptBuilder promptBuilder;
-    private final LocalLlmClient localLlmClient;
+    private final SgguConsultationService consultationService;
 
     public ConsultantController(
         SgguContextBuilder contextBuilder,
-        SgguPromptBuilder promptBuilder,
-        LocalLlmClient localLlmClient
+        SgguConsultationService consultationService
     ) {
         this.contextBuilder = contextBuilder;
-        this.promptBuilder = promptBuilder;
-        this.localLlmClient = localLlmClient;
+        this.consultationService = consultationService;
     }
 
     @PostMapping("/sggu")
     public JsonNode consult(@RequestBody(required = false) JsonNode body) {
         JsonNode requestBody = body == null ? toJsonNode(Map.of()) : body;
         String message = contextBuilder.sanitizeMessage(text(requestBody, "message"));
+        SgguConsultationMode mode = SgguConsultationMode.from(text(requestBody, "mode"));
 
         if (message.isEmpty()) {
             throw new BffException(HttpStatus.BAD_REQUEST, "INVALID_MESSAGE", "상담할 내용을 입력해줘.");
@@ -50,27 +47,8 @@ public class ConsultantController {
         }
 
         List<Map<String, String>> conversation = contextBuilder.normalizeConversation(child(requestBody, "conversation"));
-        List<Map<String, String>> messages = promptBuilder.build(message, conversation, context);
-
-        try {
-            LocalLlmClient.Completion completion = localLlmClient.createChatCompletion(messages);
-            return toJsonNode(orderedMap(
-                "Answer", completion.text(),
-                "Provider", completion.provider(),
-                "Model", completion.model(),
-                "Usage", completion.usage()
-            ));
-        } catch (LocalLlmClient.LocalLlmException exception) {
-            if ("LOCAL_LLM_UNAVAILABLE".equals(exception.code())) {
-                throw new BffException(HttpStatus.SERVICE_UNAVAILABLE, exception.code(), exception.getMessage());
-            }
-
-            throw new BffException(
-                HttpStatus.BAD_GATEWAY,
-                "LOCAL_LLM_ERROR",
-                "슥구 로컬 LLM 상담 응답을 만들지 못했어."
-            );
-        }
+        SgguConsultationResponse response = consultationService.consult(mode, message, conversation, context);
+        return toJsonNode(response.toResponseMap());
     }
 
     private JsonNode contextNode(JsonNode requestBody) {

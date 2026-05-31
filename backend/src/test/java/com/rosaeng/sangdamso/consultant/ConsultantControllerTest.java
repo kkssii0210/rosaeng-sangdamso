@@ -26,11 +26,11 @@ class ConsultantControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private FakeLocalLlmClient localLlmClient;
+    private FakeSgguConsultationService consultationService;
 
     @BeforeEach
-    void resetClient() {
-        localLlmClient.reset();
+    void resetService() {
+        consultationService.reset();
     }
 
     @Test
@@ -42,11 +42,11 @@ class ConsultantControllerTest {
             .andExpect(jsonPath("$.code").value("INVALID_MESSAGE"))
             .andExpect(jsonPath("$.message").value("상담할 내용을 입력해줘."));
 
-        assertThat(localLlmClient.messages).isNull();
+        assertThat(consultationService.message).isNull();
     }
 
     @Test
-    void rejectsMissingArmoryBeforeCallingLocalLlm() throws Exception {
+    void rejectsMissingArmoryBeforeCallingConsultationService() throws Exception {
         mockMvc.perform(post("/api/consult/sggu")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"message\":\"상담해줘\"}"))
@@ -54,11 +54,11 @@ class ConsultantControllerTest {
             .andExpect(jsonPath("$.code").value("INVALID_ARMORY"))
             .andExpect(jsonPath("$.message").value("캐릭터를 먼저 조회해줘."));
 
-        assertThat(localLlmClient.messages).isNull();
+        assertThat(consultationService.message).isNull();
     }
 
     @Test
-    void returnsLocalLlmAnswerWithCompactContext() throws Exception {
+    void returnsStructuredMainChatResponseWithCompactContext() throws Exception {
         mockMvc.perform(post("/api/consult/sggu")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -75,59 +75,48 @@ class ConsultantControllerTest {
                     }
                     """))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.Answer").value("지금은 보석부터 올려."))
-            .andExpect(jsonPath("$.Provider").value("ollama"))
-            .andExpect(jsonPath("$.Model").value("qwen2.5:7b"))
-            .andExpect(jsonPath("$.Usage.promptTokens").value(12))
-            .andExpect(jsonPath("$.Usage.outputTokens").value(7));
+            .andExpect(jsonPath("$.Mode").value("main-chat"))
+            .andExpect(jsonPath("$.Source").value("llm"))
+            .andExpect(jsonPath("$.Mood").value("warm-but-firm"))
+            .andExpect(jsonPath("$.Recommendation").value("지금은 보석부터 올려."))
+            .andExpect(jsonPath("$.DisplayText").value("지금은 보석부터 올려."));
 
-        assertThat(localLlmClient.messages).hasSize(4);
-        assertThat(localLlmClient.messages.get(1)).containsEntry("role", "user");
-        assertThat(localLlmClient.messages.get(2)).containsEntry("role", "assistant");
-        assertThat(localLlmClient.messages.get(3).get("content"))
+        assertThat(consultationService.mode).isEqualTo(SgguConsultationMode.MAIN_CHAT);
+        assertThat(consultationService.message).isEqualTo("뭐부터 올릴까?");
+        assertThat(consultationService.conversation)
+            .containsExactly(
+                Map.of("role", "user", "content", "현재 상태 봐줘"),
+                Map.of("role", "assistant", "content", "후보를 볼게.")
+            );
+        assertThat(consultationService.context.toString())
             .contains("\"characterName\":\"붐버\"")
-            .contains("\"label\":\"무기 11->12\"")
-            .contains("뭐부터 올릴까?");
+            .contains("\"label\":\"무기 11->12\"");
     }
 
     @Test
-    void mapsUnavailableLocalLlm() throws Exception {
-        localLlmClient.exception = new LocalLlmClient.LocalLlmException(
-            "LOCAL_LLM_UNAVAILABLE",
-            "로컬 LLM 서버에 연결하지 못했어. Ollama가 켜져 있는지 확인해줘."
-        );
-
+    void acceptsEfficiencySummaryModeAndBuildsContextFromArmory() throws Exception {
         mockMvc.perform(post("/api/consult/sggu")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
+                      "mode": "efficiency-summary",
                       "message": "상담해줘",
-                      "armory": {"profile": {"CharacterName": "붐버"}}
+                      "armory": {"profile": {"CharacterName": "붐버", "CharacterClassName": "스카우터"}},
+                      "specUpRecommendation": {
+                        "Recommendation": {
+                          "TopCandidates": [{"Label": "무기 11->12", "GainPercent": 0.3}]
+                        }
+                      }
                     }
                     """))
-            .andExpect(status().isServiceUnavailable())
-            .andExpect(jsonPath("$.code").value("LOCAL_LLM_UNAVAILABLE"))
-            .andExpect(jsonPath("$.message").value("로컬 LLM 서버에 연결하지 못했어. Ollama가 켜져 있는지 확인해줘."));
-    }
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.Mode").value("efficiency-summary"));
 
-    @Test
-    void mapsMalformedLocalLlmResponse() throws Exception {
-        localLlmClient.exception = new LocalLlmClient.LocalLlmException(
-            "LOCAL_LLM_MALFORMED_RESPONSE",
-            "blank assistant text"
-        );
-
-        mockMvc.perform(post("/api/consult/sggu")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "message": "상담해줘",
-                      "armory": {"profile": {"CharacterName": "붐버"}}
-                    }
-                    """))
-            .andExpect(status().isBadGateway())
-            .andExpect(jsonPath("$.code").value("LOCAL_LLM_ERROR"))
-            .andExpect(jsonPath("$.message").value("슥구 로컬 LLM 상담 응답을 만들지 못했어."));
+        assertThat(consultationService.mode).isEqualTo(SgguConsultationMode.EFFICIENCY_SUMMARY);
+        assertThat(consultationService.context.toString())
+            .contains("\"characterName\":\"붐버\"")
+            .contains("\"className\":\"스카우터\"")
+            .contains("\"label\":\"무기 11->12\"");
     }
 
     @TestConfiguration
@@ -139,40 +128,52 @@ class ConsultantControllerTest {
         }
 
         @Bean
-        SgguPromptBuilder sgguPromptBuilder() {
-            return new SgguPromptBuilder();
-        }
-
-        @Bean
-        FakeLocalLlmClient localLlmClient() {
-            return new FakeLocalLlmClient();
+        FakeSgguConsultationService consultationService() {
+            return new FakeSgguConsultationService();
         }
     }
 
-    static class FakeLocalLlmClient implements LocalLlmClient {
+    static class FakeSgguConsultationService extends SgguConsultationService {
 
-        private List<Map<String, String>> messages;
-        private LocalLlmException exception;
+        private SgguConsultationMode mode;
+        private String message;
+        private List<Map<String, String>> conversation;
+        private tools.jackson.databind.JsonNode context;
+
+        FakeSgguConsultationService() {
+            super(null, null, null, null);
+        }
 
         @Override
-        public Completion createChatCompletion(List<Map<String, String>> messages) {
-            this.messages = messages;
+        public SgguConsultationResponse consult(
+            SgguConsultationMode mode,
+            String message,
+            List<Map<String, String>> conversation,
+            tools.jackson.databind.JsonNode context
+        ) {
+            this.mode = mode;
+            this.message = message;
+            this.conversation = conversation;
+            this.context = context;
 
-            if (exception != null) {
-                throw exception;
-            }
-
-            return new Completion(
+            return new SgguConsultationResponse(
+                mode,
+                "llm",
+                "warm-but-firm",
+                "공감",
+                "진단",
                 "지금은 보석부터 올려.",
-                "ollama",
-                "qwen2.5:7b",
-                Map.of("promptTokens", 12, "outputTokens", 7)
+                "주의",
+                "다음 행동",
+                "지금은 보석부터 올려."
             );
         }
 
         void reset() {
-            messages = null;
-            exception = null;
+            mode = null;
+            message = null;
+            conversation = null;
+            context = null;
         }
     }
 }
