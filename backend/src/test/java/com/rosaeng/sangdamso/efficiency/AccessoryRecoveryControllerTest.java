@@ -2,6 +2,7 @@ package com.rosaeng.sangdamso.efficiency;
 
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.orderedMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -61,12 +62,15 @@ class AccessoryRecoveryControllerTest {
             .andExpect(jsonPath("$.SearchSummary.Type").value("목걸이"))
             .andExpect(jsonPath("$.SearchSummary.CandidateCount").value(3))
             .andExpect(jsonPath("$.RecoveryEstimate.Status").value("ready"))
+            .andExpect(jsonPath("$.RecoveryEstimate.Method").value("exact"))
+            .andExpect(jsonPath("$.RecoveryEstimate.Facts.pricePolicy").value("exactMedianActiveAuction"))
             .andExpect(jsonPath("$.RecoveryEstimate.EstimatedGrossRecoveryGold").value(100000))
             .andExpect(jsonPath("$.RecoveryEstimate.EstimatedFeeGold").value(5000))
             .andExpect(jsonPath("$.RecoveryEstimate.EstimatedRecoveryGold").value(95000))
             .andExpect(jsonPath("$.RecoveryEstimate.FeeRate").value(0.05))
             .andExpect(jsonPath("$.RecoveryEstimate.TradeCountStatus").value("unknown"))
-            .andExpect(jsonPath("$.RecoveryEstimate.Caveat").isNotEmpty());
+            .andExpect(jsonPath("$.RecoveryEstimate.Caveat").isNotEmpty())
+            .andExpect(jsonPath("$.RecoveryEstimate.CaveatCode").value(nullValue()));
 
         assertThat(auctionSearchService.type).isEqualTo("목걸이");
         assertThat(auctionSearchService.forceRefresh).isTrue();

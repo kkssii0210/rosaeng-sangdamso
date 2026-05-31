@@ -16,6 +16,7 @@ function recoveryHint(recoveryEstimate) {
   const feeGold = valueOf(recoveryEstimate, ["EstimatedFeeGold", "estimatedFeeGold"], null);
   const tradeCountStatus = valueOf(recoveryEstimate, ["TradeCountStatus", "tradeCountStatus"], "");
   const tradeRemainCount = valueOf(recoveryEstimate, ["TradeRemainCount", "tradeRemainCount"], null);
+  const caveatCode = valueOf(recoveryEstimate, ["CaveatCode", "caveatCode"], "");
   const caveat = valueOf(recoveryEstimate, ["Caveat", "caveat"], "");
 
   if (Number.isFinite(Number(feeGold)) && Number(feeGold) > 0) {
@@ -29,6 +30,10 @@ function recoveryHint(recoveryEstimate) {
     Number.isFinite(Number(tradeRemainCount))
   ) {
     parts.push(`거래 ${tradeRemainCount}회 기준`);
+  }
+
+  if (caveatCode === "APPROXIMATE_IMPACT_REFINEMENT" && !caveat) {
+    parts.push("유사 조건 매물 최저가 기준");
   }
 
   if (caveat) {
