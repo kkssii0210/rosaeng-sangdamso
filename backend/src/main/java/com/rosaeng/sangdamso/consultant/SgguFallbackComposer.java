@@ -3,15 +3,12 @@ package com.rosaeng.sangdamso.consultant;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.arrayItems;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.child;
 
-import java.text.NumberFormat;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 
 @Component
 public class SgguFallbackComposer {
-
-    private static final NumberFormat GOLD_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
 
     public SgguConsultationResponse compose(SgguConsultationMode mode, String message, JsonNode context) {
         JsonNode topCandidate = arrayItems(child(context, "topSpecUps")).stream().findFirst().orElse(null);
@@ -72,7 +69,7 @@ public class SgguFallbackComposer {
         }
 
         if ("costGold".equals(fieldName)) {
-            return GOLD_FORMAT.format(value.asLong());
+            return String.format(Locale.US, "%,d", value.asLong());
         }
 
         return String.format(Locale.US, "%.2f", value.asDouble()).replaceAll("0+$", "").replaceAll("\\.$", "");
