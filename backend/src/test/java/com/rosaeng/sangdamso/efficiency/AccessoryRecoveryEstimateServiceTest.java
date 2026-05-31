@@ -37,9 +37,15 @@ class AccessoryRecoveryEstimateServiceTest {
         assertThat(estimate.get("Status").asString()).isEqualTo("ready");
         assertThat(estimate.get("Confidence").asString()).isEqualTo("high");
         assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(3);
-        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(100000);
-        assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(60000);
-        assertThat(estimate.get("NetGoldPerOnePercentCombatPower").asInt()).isEqualTo(40000);
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(100000);
+        assertThat(estimate.get("EstimatedFeeGold").asInt()).isEqualTo(5000);
+        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(95000);
+        assertThat(estimate.get("FeeRate").asDouble()).isEqualTo(0.05);
+        assertThat(estimate.get("TradeCountStatus").asString()).isEqualTo("unknown");
+        assertThat(estimate.get("TradeRemainCount").isNull()).isTrue();
+        assertThat(estimate.get("Caveat").asString()).contains("거래 가능 횟수");
+        assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(65000);
+        assertThat(estimate.get("NetGoldPerOnePercentCombatPower").asInt()).isEqualTo(43333);
     }
 
     @Test
@@ -53,8 +59,74 @@ class AccessoryRecoveryEstimateServiceTest {
         assertThat(estimate.get("Status").asString()).isEqualTo("lowConfidence");
         assertThat(estimate.get("Confidence").asString()).isEqualTo("low");
         assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(1);
-        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(100000);
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(100000);
+        assertThat(estimate.get("EstimatedFeeGold").asInt()).isEqualTo(5000);
+        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(95000);
         assertThat(estimate.get("NetCostGold").isNull()).isTrue();
+    }
+
+    @Test
+    void filtersExactMatchesByKnownTradeRemainCount() {
+        JsonNode estimate = service.build(
+            currentAccessoryWithTradeCount(2),
+            toJsonNode(List.of(
+                matchingCandidate(90000, 2),
+                matchingCandidate(100000, 2),
+                matchingCandidate(110000, 2),
+                matchingCandidate(50000, 1)
+            )),
+            toJsonNode(orderedMap("BuyPrice", 160000, "CombatPowerGainPercent", 1.5))
+        );
+
+        assertThat(estimate.get("Status").asString()).isEqualTo("ready");
+        assertThat(estimate.get("Confidence").asString()).isEqualTo("high");
+        assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(3);
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(100000);
+        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(95000);
+        assertThat(estimate.get("TradeCountStatus").asString()).isEqualTo("matched");
+        assertThat(estimate.get("TradeRemainCount").asInt()).isEqualTo(2);
+        assertThat(estimate.get("Caveat").asString()).isBlank();
+    }
+
+    @Test
+    void knownTradeRemainCountCanLowerConfidenceWhenEvidenceIsSparse() {
+        JsonNode estimate = service.build(
+            currentAccessoryWithTradeCount(2),
+            toJsonNode(List.of(
+                matchingCandidate(90000, 2),
+                matchingCandidate(110000, 2),
+                matchingCandidate(50000, 1),
+                matchingCandidate(60000, 1)
+            )),
+            toJsonNode(orderedMap("BuyPrice", 160000, "CombatPowerGainPercent", 1.5))
+        );
+
+        assertThat(estimate.get("Status").asString()).isEqualTo("lowConfidence");
+        assertThat(estimate.get("Confidence").asString()).isEqualTo("low");
+        assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(2);
+        assertThat(estimate.get("TradeCountStatus").asString()).isEqualTo("matched");
+        assertThat(estimate.get("TradeRemainCount").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void returnsZeroRecoveryWhenCurrentTradeRemainCountIsZero() {
+        JsonNode estimate = service.build(
+            currentAccessoryWithTradeCount(0),
+            toJsonNode(List.of(matchingCandidate(100000, 1))),
+            toJsonNode(orderedMap("BuyPrice", 160000, "CombatPowerGainPercent", 1.5))
+        );
+
+        assertThat(estimate.get("Status").asString()).isEqualTo("ready");
+        assertThat(estimate.get("Confidence").asString()).isEqualTo("high");
+        assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(0);
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(0);
+        assertThat(estimate.get("EstimatedFeeGold").asInt()).isEqualTo(0);
+        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(0);
+        assertThat(estimate.get("TradeCountStatus").asString()).isEqualTo("untradable");
+        assertThat(estimate.get("TradeRemainCount").asInt()).isEqualTo(0);
+        assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(160000);
+        assertThat(estimate.get("NetGoldPerOnePercentCombatPower").asInt()).isEqualTo(106667);
+        assertThat(estimate.get("Caveat").asString()).contains("0회");
     }
 
     @Test
@@ -107,7 +179,27 @@ class AccessoryRecoveryEstimateServiceTest {
         ));
     }
 
+    private JsonNode currentAccessoryWithTradeCount(int tradeRemainCount) {
+        return toJsonNode(orderedMap(
+            "Type", "목걸이",
+            "Name", "고대 목걸이",
+            "Quality", 91,
+            "MainStatValue", 12000,
+            "EnlightenmentPoint", 13,
+            "TradeRemainCount", tradeRemainCount,
+            "DetailSections", List.of(
+                orderedMap("title", "기본 효과", "lines", List.of("힘 +12000")),
+                orderedMap("title", "연마 효과", "lines", List.of("추가 피해 +1.50%")),
+                orderedMap("title", "아크 패시브 포인트 효과", "lines", List.of("깨달음 +13"))
+            )
+        ));
+    }
+
     private JsonNode matchingCandidate(int buyPrice) {
+        return matchingCandidate(buyPrice, null);
+    }
+
+    private JsonNode matchingCandidate(int buyPrice, Integer tradeRemainCount) {
         return toJsonNode(orderedMap(
             "Type", "목걸이",
             "Name", "고대 목걸이",
@@ -115,6 +207,7 @@ class AccessoryRecoveryEstimateServiceTest {
             "MainStatValue", 12000,
             "EnlightenmentPoint", 13,
             "BuyPrice", buyPrice,
+            "TradeRemainCount", tradeRemainCount,
             "DetailSections", List.of(
                 orderedMap("title", "연마 효과", "lines", List.of("추가 피해 +1.50%"))
             )
