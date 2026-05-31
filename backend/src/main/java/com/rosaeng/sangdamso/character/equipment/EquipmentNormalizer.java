@@ -37,6 +37,7 @@ public class EquipmentNormalizer {
     private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]*>");
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern MAIN_STAT_PATTERN = Pattern.compile("^(?<stat>힘|민첩|지능)\\s*\\+?\\s*(?<value>[\\d,]+)");
+    private static final Pattern TRADE_REMAIN_COUNT_PATTERN = Pattern.compile("거래\\s*가능(?:\\s*횟수)?\\s*[:：]?\\s*(?<count>\\d+)");
     private static final Pattern ABILITY_STONE_LEVEL_PATTERN = Pattern.compile(
         "^(?:\\[(?<bracketName>[^\\]]+)]\\s*)?(?<name>.+?)?\\s*Lv\\.(?<level>\\d+)",
         Pattern.CASE_INSENSITIVE
@@ -98,6 +99,9 @@ public class EquipmentNormalizer {
         Map<String, Object> mainStats = extractMainStats(tooltip, type);
         Map<String, Object> weaponStats = WEAPON_TYPE.equals(type) ? extractWeaponStats(tooltip) : null;
         Map<String, Object> abilityStone = ABILITY_STONE_TYPE.equals(type) ? extractAbilityStoneInfo(tooltip) : null;
+        Integer tradeRemainCount = DETAILED_EQUIPMENT_TYPES.contains(type)
+            ? extractTradeRemainCount(detailSections, extractIndentStringSections(tooltip))
+            : null;
 
         normalized.put("Type", type);
         normalized.put("Name", text(item, "Name"));
@@ -119,6 +123,10 @@ public class EquipmentNormalizer {
 
         if (abilityStone != null) {
             normalized.put("AbilityStone", abilityStone);
+        }
+
+        if (tradeRemainCount != null) {
+            normalized.put("TradeRemainCount", tradeRemainCount);
         }
 
         return normalized;
@@ -337,6 +345,27 @@ public class EquipmentNormalizer {
             "Value", value,
             "Text", line.trim()
         );
+    }
+
+    private Integer extractTradeRemainCount(
+        List<Map<String, Object>> detailSections,
+        List<Map<String, Object>> indentSections
+    ) {
+        List<Map<String, Object>> sections = new ArrayList<>();
+        sections.addAll(detailSections);
+        sections.addAll(indentSections);
+
+        for (Map<String, Object> section : sections) {
+            for (String line : lines(section.get("lines"))) {
+                Matcher match = TRADE_REMAIN_COUNT_PATTERN.matcher(line);
+
+                if (match.find()) {
+                    return parseInteger(match.group("count"));
+                }
+            }
+        }
+
+        return null;
     }
 
     private Map<String, Object> extractAbilityStoneInfo(JsonNode tooltip) {

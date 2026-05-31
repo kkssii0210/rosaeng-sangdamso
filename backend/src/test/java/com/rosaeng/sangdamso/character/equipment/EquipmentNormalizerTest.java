@@ -116,6 +116,51 @@ class EquipmentNormalizerTest {
         assertThat(paradiseOrb.get("Tooltip")).isNull();
     }
 
+    @Test
+    void extractsAccessoryTradeRemainCountFromTooltipLines() throws Exception {
+        JsonNode equipment = equipment(
+            item("목걸이", "새벽의 목걸이", "https://cdn-lostark.game.onstove.com/sample-necklace.png", "고대",
+                tooltip(83, sections(
+                    section("기본 효과", "힘 +17831", "민첩 +17831", "지능 +17831"),
+                    section("거래 정보", "거래 가능 횟수 : 2회")
+                )))
+        );
+
+        JsonNode normalized = normalizer.normalize(equipment);
+
+        assertThat(normalized.get(0).get("TradeRemainCount").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void omitsAccessoryTradeRemainCountWhenTooltipDoesNotExposeIt() throws Exception {
+        JsonNode equipment = equipment(
+            item("반지", "새벽의 반지", "https://cdn-lostark.game.onstove.com/sample-ring.png", "고대",
+                tooltip(83, sections(
+                    section("기본 효과", "힘 +17831", "민첩 +17831", "지능 +17831"),
+                    section("연마 효과", "치명타 적중률 +0.40%")
+                )))
+        );
+
+        JsonNode normalized = normalizer.normalize(equipment);
+
+        assertThat(normalized.get(0).get("TradeRemainCount")).isNull();
+    }
+
+    @Test
+    void extractsZeroAccessoryTradeRemainCountFromTooltipLines() throws Exception {
+        JsonNode equipment = equipment(
+            item("귀걸이", "새벽의 귀걸이", "https://cdn-lostark.game.onstove.com/sample-earring.png", "고대",
+                tooltip(83, sections(
+                    section("기본 효과", "힘 +17831", "민첩 +17831", "지능 +17831"),
+                    section("거래 정보", "거래 가능 횟수 : 0회")
+                )))
+        );
+
+        JsonNode normalized = normalizer.normalize(equipment);
+
+        assertThat(normalized.get(0).get("TradeRemainCount").asInt()).isEqualTo(0);
+    }
+
     private JsonNode equipment(JsonNode... items) {
         return objectMapper.convertValue(Arrays.asList(items), JsonNode.class);
     }
