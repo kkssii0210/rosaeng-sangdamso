@@ -1,4 +1,5 @@
 import { buildSgguConsultantContext } from "../lib/ui/sgguContext.js";
+import { randomUUID } from "node:crypto";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:3000";
 const DEFAULT_MESSAGE = "지금 뭐부터 올릴까?";
@@ -10,7 +11,7 @@ function readOption(name, fallback) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-function buildRequestBody(message) {
+function buildRequestBody(message, smokeNonce) {
   const armory = {
     profile: {
       CharacterName: "스모크테스트",
@@ -48,6 +49,8 @@ function buildRequestBody(message) {
     }
   };
 
+  const context = buildSgguConsultantContext({ armory, specUpRecommendation });
+
   return {
     mode: "main-chat",
     message,
@@ -55,13 +58,17 @@ function buildRequestBody(message) {
       { role: "user", content: "현재 캐릭터 상태를 보고 우선순위를 알려줘." },
       { role: "sggu", content: "스펙업 후보와 현재 장비를 같이 볼게." }
     ],
-    context: buildSgguConsultantContext({ armory, specUpRecommendation })
+    context: {
+      ...context,
+      smokeNonce
+    }
   };
 }
 
 async function main() {
   const baseUrl = readOption("SGGU_CONSULT_BASE_URL", DEFAULT_BASE_URL).replace(/\/+$/, "");
   const message = readOption("SGGU_SMOKE_MESSAGE", DEFAULT_MESSAGE);
+  const smokeNonce = readOption("SGGU_SMOKE_NONCE", randomUUID());
   const timeoutMs = Number(readOption("SGGU_SMOKE_TIMEOUT_MS", String(DEFAULT_TIMEOUT_MS)));
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) ? timeoutMs : DEFAULT_TIMEOUT_MS);
@@ -73,7 +80,7 @@ async function main() {
         accept: "application/json",
         "content-type": "application/json"
       },
-      body: JSON.stringify(buildRequestBody(message)),
+      body: JSON.stringify(buildRequestBody(message, smokeNonce)),
       signal: controller.signal
     });
     const data = await response.json().catch(() => ({}));

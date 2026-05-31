@@ -17,6 +17,15 @@ function fallbackConsultation() {
   };
 }
 
+function llmConsultation() {
+  return {
+    ...fallbackConsultation(),
+    Source: "llm",
+    Provider: "ollama",
+    Model: "qwen2.5:7b"
+  };
+}
+
 async function withServer(handler, callback) {
   const server = http.createServer(handler);
 
@@ -77,5 +86,33 @@ test("sggu smoke fails by default when consultation source is fallback", async (
 
     assert.notEqual(result.code, 0);
     assert.match(result.stderr, /fallback/i);
+  });
+});
+
+test("sggu smoke sends a distinct nonce so cached llm responses cannot prove connectivity", async () => {
+  const nonces = [];
+
+  await withServer((request, response) => {
+    let body = "";
+
+    request.on("data", (chunk) => {
+      body += chunk;
+    });
+    request.on("end", () => {
+      const payload = JSON.parse(body);
+
+      nonces.push(payload.context?.smokeNonce);
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(llmConsultation()));
+    });
+  }, async (baseUrl) => {
+    const first = await runSmoke(baseUrl);
+    const second = await runSmoke(baseUrl);
+
+    assert.equal(first.code, 0);
+    assert.equal(second.code, 0);
+    assert.equal(typeof nonces[0], "string");
+    assert.equal(typeof nonces[1], "string");
+    assert.notEqual(nonces[0], nonces[1]);
   });
 });

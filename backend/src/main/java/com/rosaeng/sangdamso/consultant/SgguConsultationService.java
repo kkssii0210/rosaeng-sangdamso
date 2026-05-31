@@ -25,7 +25,8 @@ public class SgguConsultationService {
         "부터", "먼저", "우선", "1순위", "추천", "진행", "올리", "보자", "좋"
     );
     private static final List<String> REJECTION_TERMS = List.of(
-        "보류", "미루", "후순위", "나중", "제외", "대신", "말고", "아니"
+        "보류", "미루", "후순위", "나중", "제외", "대신", "말고", "아니", "보다", "보다는", "보단",
+        "하지만", "지만"
     );
 
     private final SgguPromptBuilder promptBuilder;

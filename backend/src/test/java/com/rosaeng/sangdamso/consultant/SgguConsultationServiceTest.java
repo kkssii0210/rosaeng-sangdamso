@@ -217,6 +217,29 @@ class SgguConsultationServiceTest {
         assertThat(response.recommendation()).contains("무기 11->12");
     }
 
+    @Test
+    void returnsFallbackWhenEfficiencySummaryComparesTopCandidateAgainstAnotherPick() {
+        localLlmClient.text = """
+            {
+              "Mood": "warm-but-firm",
+              "Diagnosis": "상위 후보는 무기 11->12야.",
+              "Recommendation": "무기 11->12보다 7겁 보석부터 보자.",
+              "NextAction": "보석 가격을 확인해줘.",
+              "DisplayText": "지금은 보석을 먼저 볼게."
+            }
+            """;
+
+        SgguConsultationResponse response = service.consult(
+            SgguConsultationMode.EFFICIENCY_SUMMARY,
+            "전투력 효율 결과를 상담 카드로 요약해줘",
+            List.of(),
+            context()
+        );
+
+        assertThat(response.source()).isEqualTo("fallback");
+        assertThat(response.recommendation()).contains("무기 11->12");
+    }
+
     private int cacheSize() throws Exception {
         Field field = SgguConsultationService.class.getDeclaredField("cache");
         field.setAccessible(true);
