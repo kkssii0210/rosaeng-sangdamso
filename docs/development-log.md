@@ -367,6 +367,49 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - Spring spec-up 추천 결과를 슥구 상담 context에 연결해 Top 5 추천 이유를 대화형으로 설명하게 한다.
 - 붐버 외 실제 캐릭터 fixture를 늘려 악세/보석/각인서 추천 순위의 회귀 검증 범위를 넓힌다.
 
+## 2026-05-31
+
+### 목표
+
+- 로컬 LLM 기반 슥구 상담을 Spring Boot 중심 구조로 정리한다.
+- 전투력 효율 시뮬레이터는 계산 결과를 먼저 보여주고, 상담 문구는 뒤에서 비동기로 생성되게 만든다.
+- 첫 화면에서는 캐릭터 조회를 먼저 거치고, 조회된 캐릭터 기준으로만 효율 시뮬레이터에 진입하도록 흐름을 고정한다.
+- Lost Ark 공식 API 호출이 불안정해졌을 때 효율 계산 쪽 호출량을 줄이고, 개발 서버 실행 편의성을 보강한다.
+
+### 변경
+
+- `docs/superpowers/specs/2026-05-31-sggu-consultation-orchestrator-design.md`와 `docs/superpowers/plans/2026-05-31-sggu-consultation-orchestrator.md`에 슥구 상담 오케스트레이터 설계와 실행 계획을 남겼다.
+- Spring Boot `POST /api/consult/sggu`가 `Mode`, `Source`, `Mood`, `Empathy`, `Diagnosis`, `Recommendation`, `Caution`, `NextAction`, `DisplayText`를 갖는 구조화 응답을 반환하도록 정리했다.
+- 로컬 LLM 응답이 malformed JSON이거나 계산 결과와 맞지 않으면 deterministic fallback 상담을 반환하도록 했다.
+- 효율 요약 모드에서는 LLM이 1순위 스펙업 후보를 실제 추천하는지 검증한다. 후보명을 언급만 하거나 `무기 11->12보다 보석부터`처럼 다른 후보를 추천하는 문장은 fallback 처리한다.
+- 상담 prompt를 `main-chat`, `efficiency-summary` 모드별로 나누고, cache key에 mode, 메시지, 대화, context를 포함했다.
+- 메인 상담 UI는 구조화 응답의 `DisplayText`를 우선 사용하고, 기존 `Answer` 응답은 legacy fallback으로만 남겼다.
+- 전투력 효율 페이지는 계산 중 `슥구가 생각중이다.` 문구를 보여주고, 계산 결과 렌더링 이후 상담 카드를 별도 async 요청으로 채운다.
+- 효율 페이지 상담 카드에 슥구가 상담소에서 결과를 설명하는 분위기의 `public/efficiency-consult-room.png` 에셋을 추가했다.
+- `scripts/smoke-sggu-consult.mjs`를 추가해 실행 중인 Next.js 서버의 `/api/consult/sggu`를 호출하고, 구조화 응답과 `Source: llm`을 검증하게 했다. smoke 요청에는 매번 nonce를 넣어 캐시된 예전 LLM 응답으로 Ollama 연결 확인이 통과하지 않게 했다.
+- 악세사리 경매장 검색은 5분 cache, page cap, target 후보 수 기준 조기 종료를 적용해 같은 후보를 반복 조회하지 않게 했다.
+- 장착 악세사리별 후보 검색은 virtual thread 기반 병렬 실행으로 바꿔 전체 효율 계산 대기 시간을 줄였다.
+- `npm run dev:backend`와 `scripts/restart-backend.sh`를 추가해 루트 `.env.local`과 `backend/.env.local`을 읽은 뒤 Spring Boot 서버를 재시작할 수 있게 했다.
+- 첫 화면 주요 내비게이션에서 전투력 효율 시뮬레이터 링크를 제거하고, 효율 페이지는 조회된 캐릭터 query가 있을 때만 진입하도록 보정했다.
+
+### 검증
+
+- `cd backend && ./mvnw -Dtest=SgguResponseParserTest,SgguFallbackComposerTest,SgguPromptBuilderTest,SgguConsultationServiceTest,ConsultantControllerTest test`: 22개 통과
+- `cd backend && ./mvnw test`: 134개 통과
+- `npm test`: 121개 통과
+- `npm run lint`
+- `npm run build`
+- `node --check scripts/smoke-sggu-consult.mjs`
+- `curl http://127.0.0.1:3000/`: 200 확인
+- `curl http://127.0.0.1:8080/actuator/health`: `UP` 확인
+
+### 다음 작업
+
+- 상담 cache는 현재 single-flight가 아니므로, 동일 cold request가 동시에 들어올 때 local LLM 호출이 중복될 수 있다. 필요하면 request coalescing을 추가한다.
+- 효율 페이지는 계산 결과가 상담보다 먼저 렌더링되는 흐름을 unit helper로 검증했지만, 실제 browser/component 수준 검증을 추가하면 더 좋다.
+- LLM 응답 신뢰도는 현재 보수적 keyword grounding 기반이다. 이후 RAG와 함께 top candidate id/label을 구조적으로 echo하게 만들어 검증을 더 단단히 한다.
+- 서포터 기준 상담과 효율 계산은 아직 범위 밖이다. 딜러 기준이 안정화된 뒤 support profile을 별도 mode로 확장한다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
