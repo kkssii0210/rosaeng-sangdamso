@@ -35,6 +35,7 @@ class AccessoryRecoveryEstimateServiceTest {
         );
 
         assertThat(estimate.get("Status").asString()).isEqualTo("ready");
+        assertThat(estimate.get("Method").asString()).isEqualTo("exact");
         assertThat(estimate.get("Confidence").asString()).isEqualTo("high");
         assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(3);
         assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(100000);
@@ -44,6 +45,9 @@ class AccessoryRecoveryEstimateServiceTest {
         assertThat(estimate.get("TradeCountStatus").asString()).isEqualTo("unknown");
         assertThat(estimate.get("TradeRemainCount").isNull()).isTrue();
         assertThat(estimate.get("Caveat").asString()).contains("거래 가능 횟수");
+        assertThat(estimate.get("CaveatCode").isNull()).isTrue();
+        assertThat(estimate.get("Facts").get("pricePolicy").asString()).isEqualTo("exactMedianActiveAuction");
+        assertThat(estimate.get("Facts").get("feeRate").asDouble()).isEqualTo(0.05);
         assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(65000);
         assertThat(estimate.get("NetGoldPerOnePercentCombatPower").asInt()).isEqualTo(43333);
     }
@@ -117,6 +121,7 @@ class AccessoryRecoveryEstimateServiceTest {
         );
 
         assertThat(estimate.get("Status").asString()).isEqualTo("ready");
+        assertThat(estimate.get("Method").asString()).isEqualTo("untradable");
         assertThat(estimate.get("Confidence").asString()).isEqualTo("high");
         assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(0);
         assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(0);
@@ -127,6 +132,8 @@ class AccessoryRecoveryEstimateServiceTest {
         assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(160000);
         assertThat(estimate.get("NetGoldPerOnePercentCombatPower").asInt()).isEqualTo(106667);
         assertThat(estimate.get("Caveat").asString()).contains("0회");
+        assertThat(estimate.get("CaveatCode").asString()).isEqualTo("UNTRADABLE");
+        assertThat(estimate.get("Facts").get("pricePolicy").asString()).isEqualTo("none");
     }
 
     @Test
@@ -197,7 +204,9 @@ class AccessoryRecoveryEstimateServiceTest {
         );
 
         assertThat(estimate.get("Status").asString()).isEqualTo("lowConfidence");
+        assertThat(estimate.get("Method").asString()).isEqualTo("exact");
         assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(3);
+        assertThat(estimate.get("Facts").get("pricePolicy").asString()).isEqualTo("exactMedianActiveAuction");
         assertThat(estimate.get("NetCostGold").isNull()).isTrue();
     }
 

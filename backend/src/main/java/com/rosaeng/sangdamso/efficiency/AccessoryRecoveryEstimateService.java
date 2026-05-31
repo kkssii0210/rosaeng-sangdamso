@@ -8,6 +8,7 @@ import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.to
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
@@ -15,6 +16,9 @@ import tools.jackson.databind.JsonNode;
 public class AccessoryRecoveryEstimateService {
 
     private static final double SALE_FEE_RATE = 0.05;
+    private static final String METHOD_EXACT = "exact";
+    private static final String METHOD_UNTRADABLE = "untradable";
+    private static final String CAVEAT_CODE_UNTRADABLE = "UNTRADABLE";
     private static final String TRADE_COUNT_UNKNOWN_CAVEAT = "현재 악세 거래 가능 횟수를 확인하지 못해 거래횟수별 시세 차이는 반영하지 못했어.";
     private static final String UNTRADABLE_CAVEAT = "현재 악세 거래 가능 횟수가 0회라 회수금을 0으로 계산했어.";
 
@@ -55,6 +59,7 @@ public class AccessoryRecoveryEstimateService {
 
         return toJsonNode(orderedMap(
             "Status", "ready",
+            "Method", METHOD_EXACT,
             "Confidence", "high",
             "EvidenceCount", summary.count(),
             "EstimatedGrossRecoveryGold", recovery.grossRecoveryGold(),
@@ -64,6 +69,8 @@ public class AccessoryRecoveryEstimateService {
             "TradeCountStatus", tradeContext.status(),
             "TradeRemainCount", tradeContext.tradeRemainCount(),
             "Caveat", tradeContext.caveat(),
+            "CaveatCode", null,
+            "Facts", exactFacts(),
             "NetCostGold", netCost,
             "NetGoldPerOnePercentCombatPower", Math.round(netCost / gainPercent)
         ));
@@ -137,6 +144,7 @@ public class AccessoryRecoveryEstimateService {
 
         return toJsonNode(orderedMap(
             "Status", "lowConfidence",
+            "Method", METHOD_EXACT,
             "Confidence", "low",
             "EvidenceCount", summary.count(),
             "EstimatedGrossRecoveryGold", recovery.grossRecoveryGold(),
@@ -146,6 +154,8 @@ public class AccessoryRecoveryEstimateService {
             "TradeCountStatus", tradeContext.status(),
             "TradeRemainCount", tradeContext.tradeRemainCount(),
             "Caveat", tradeContext.caveat(),
+            "CaveatCode", null,
+            "Facts", exactFacts(),
             "NetCostGold", null,
             "NetGoldPerOnePercentCombatPower", null
         ));
@@ -162,6 +172,7 @@ public class AccessoryRecoveryEstimateService {
 
         return toJsonNode(orderedMap(
             "Status", actionable ? "ready" : "lowConfidence",
+            "Method", METHOD_UNTRADABLE,
             "Confidence", actionable ? "high" : "low",
             "EvidenceCount", 0,
             "EstimatedGrossRecoveryGold", 0,
@@ -171,6 +182,8 @@ public class AccessoryRecoveryEstimateService {
             "TradeCountStatus", "untradable",
             "TradeRemainCount", 0,
             "Caveat", UNTRADABLE_CAVEAT,
+            "CaveatCode", CAVEAT_CODE_UNTRADABLE,
+            "Facts", untradableFacts(),
             "NetCostGold", netCost,
             "NetGoldPerOnePercentCombatPower", netGoldPerOnePercentCombatPower
         ));
@@ -191,6 +204,21 @@ public class AccessoryRecoveryEstimateService {
         }
 
         return new TradeContext("matched", currentTradeRemainCount, "");
+    }
+
+    private Map<String, Object> exactFacts() {
+        return orderedMap(
+            "pricePolicy", "exactMedianActiveAuction",
+            "feeRate", SALE_FEE_RATE
+        );
+    }
+
+    private Map<String, Object> untradableFacts() {
+        return orderedMap(
+            "role", "dealer",
+            "pricePolicy", "none",
+            "feeRate", SALE_FEE_RATE
+        );
     }
 
     private Integer positiveInteger(JsonNode node, String... keys) {
