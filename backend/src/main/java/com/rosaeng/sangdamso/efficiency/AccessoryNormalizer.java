@@ -8,6 +8,7 @@ import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.to
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +22,7 @@ public class AccessoryNormalizer {
     private static final Set<String> MAIN_STAT_NAMES = Set.of("힘", "민첩", "지능");
     private static final Set<String> COMBAT_STAT_NAMES = Set.of("치명", "특화", "신속");
     private static final int REFINEMENT_FIRST_OPTION = 7;
+    private static final Pattern SECTION_VALUE_PATTERN = Pattern.compile("\\+\\s*(?<value>\\d+(?:,\\d{3})*(?:\\.\\d+)?)");
     private static final List<Rule> REFINEMENT_RULES = List.of(
         new Rule("목걸이", 42, "적에게 주는 피해", true, List.of(24, 30, 37, 54, 55, 69, 84, 90, 115, 120, 140, 200),
             Pattern.compile("^적에게 주는 피해(?:\\s*증가)?\\s*\\+?\\s*(?<value>\\d+(?:\\.\\d+)?)\\s*%")),
@@ -127,10 +129,58 @@ public class AccessoryNormalizer {
             text(accessory, "Type", "type"),
             text(accessory, "Name", "name"),
             String.valueOf(intValue(accessory, "Quality", "quality")),
-            String.valueOf(intValue(accessory, "MainStatValue", "mainStatValue")),
-            String.valueOf(intValue(accessory, "EnlightenmentPoint", "enlightenmentPoint")),
+            String.valueOf(resolvedMainStatValue(accessory)),
+            String.valueOf(resolvedEnlightenmentPoint(accessory)),
             refinementLinesOf(accessory).toString()
         );
+    }
+
+    private int resolvedMainStatValue(JsonNode accessory) {
+        int value = intValue(accessory, "MainStatValue", "mainStatValue");
+
+        return value > 0 ? value : sectionValue(accessory, "기본 효과").orElse(0);
+    }
+
+    private int resolvedEnlightenmentPoint(JsonNode accessory) {
+        int value = intValue(accessory, "EnlightenmentPoint", "enlightenmentPoint");
+
+        return value > 0 ? value : sectionValue(accessory, "아크 패시브 포인트 효과").orElse(0);
+    }
+
+    private Optional<Integer> sectionValue(JsonNode accessory, String sectionTitle) {
+        for (JsonNode section : arrayItems(child(accessory, "DetailSections"))) {
+            String title = text(section, "title", "Title");
+
+            if (!sectionTitle.equals(title)) {
+                continue;
+            }
+
+            Optional<Integer> value = firstLineValue(section, "lines");
+
+            if (value.isPresent()) {
+                return value;
+            }
+
+            return firstLineValue(section, "Lines");
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Integer> firstLineValue(JsonNode section, String field) {
+        List<JsonNode> lines = arrayItems(child(section, field));
+
+        if (lines.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Matcher matcher = SECTION_VALUE_PATTERN.matcher(lines.get(0).asString());
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        return Optional.of((int) Math.round(Double.parseDouble(matcher.group("value").replace(",", ""))));
     }
 
     private SearchOption searchOptionForLine(String type, String line) {

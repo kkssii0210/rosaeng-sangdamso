@@ -81,6 +81,32 @@ class AccessoryNormalizerTest {
         assertThat(eligibility.reason()).isEqualTo("QUALITY_BELOW_MAX_ENLIGHTENMENT_THRESHOLD");
     }
 
+    @Test
+    void fingerprintFallsBackToDetailSectionValues() {
+        JsonNode explicit = toJsonNode(orderedMap(
+            "Type", "목걸이",
+            "Name", "고대 목걸이",
+            "Quality", 91,
+            "MainStatValue", 12000,
+            "EnlightenmentPoint", 13,
+            "DetailSections", List.of(
+                orderedMap("title", "연마 효과", "lines", List.of("추가 피해 +1.50%"))
+            )
+        ));
+        JsonNode detailOnly = toJsonNode(orderedMap(
+            "Type", "목걸이",
+            "Name", "고대 목걸이",
+            "Quality", 91,
+            "DetailSections", List.of(
+                orderedMap("title", "기본 효과", "lines", List.of("힘 +12,000")),
+                orderedMap("title", "연마 효과", "lines", List.of("추가 피해 +1.50%")),
+                orderedMap("title", "아크 패시브 포인트 효과", "lines", List.of("깨달음 +13"))
+            )
+        ));
+
+        assertThat(normalizer.fingerprint(detailOnly)).isEqualTo(normalizer.fingerprint(explicit));
+    }
+
     private JsonNode toJsonNode(Object value) {
         return objectMapper.convertValue(value, JsonNode.class);
     }
