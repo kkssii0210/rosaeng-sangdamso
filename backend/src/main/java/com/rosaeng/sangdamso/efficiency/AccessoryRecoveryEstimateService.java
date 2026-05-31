@@ -158,10 +158,11 @@ public class AccessoryRecoveryEstimateService {
         Long netGoldPerOnePercentCombatPower = netCost == null || gainPercent == null
             ? null
             : Math.round(netCost / gainPercent);
+        boolean actionable = netCost != null && netGoldPerOnePercentCombatPower != null;
 
         return toJsonNode(orderedMap(
-            "Status", "ready",
-            "Confidence", "high",
+            "Status", actionable ? "ready" : "lowConfidence",
+            "Confidence", actionable ? "high" : "low",
             "EvidenceCount", 0,
             "EstimatedGrossRecoveryGold", 0,
             "EstimatedFeeGold", 0,
@@ -180,7 +181,7 @@ public class AccessoryRecoveryEstimateService {
             return new Recovery(null, null, null);
         }
 
-        int feeGold = Math.toIntExact((long) Math.ceil(grossRecoveryGold * SALE_FEE_RATE));
+        int feeGold = Math.toIntExact((grossRecoveryGold * 5L + 99L) / 100L);
         return new Recovery(grossRecoveryGold, feeGold, Math.max(0, grossRecoveryGold - feeGold));
     }
 

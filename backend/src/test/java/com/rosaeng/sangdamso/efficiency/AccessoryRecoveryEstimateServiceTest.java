@@ -130,6 +130,43 @@ class AccessoryRecoveryEstimateServiceTest {
     }
 
     @Test
+    void returnsLowConfidenceWhenZeroTradeRecommendationNumbersAreInvalid() {
+        JsonNode estimate = service.build(
+            currentAccessoryWithTradeCount(0),
+            toJsonNode(List.of(matchingCandidate(100000, 1))),
+            toJsonNode(orderedMap("BuyPrice", 0, "CombatPowerGainPercent", 1.5))
+        );
+
+        assertThat(estimate.get("Status").asString()).isEqualTo("lowConfidence");
+        assertThat(estimate.get("Confidence").asString()).isEqualTo("low");
+        assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(0);
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(0);
+        assertThat(estimate.get("EstimatedFeeGold").asInt()).isEqualTo(0);
+        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(0);
+        assertThat(estimate.get("TradeCountStatus").asString()).isEqualTo("untradable");
+        assertThat(estimate.get("NetCostGold").isNull()).isTrue();
+        assertThat(estimate.get("NetGoldPerOnePercentCombatPower").isNull()).isTrue();
+    }
+
+    @Test
+    void roundsRecoveryFeeUp() {
+        JsonNode estimate = service.build(
+            currentAccessory(),
+            toJsonNode(List.of(
+                matchingCandidate(99901),
+                matchingCandidate(100001),
+                matchingCandidate(100101)
+            )),
+            toJsonNode(orderedMap("BuyPrice", 160000, "CombatPowerGainPercent", 1.5))
+        );
+
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(100001);
+        assertThat(estimate.get("EstimatedFeeGold").asInt()).isEqualTo(5001);
+        assertThat(estimate.get("EstimatedRecoveryGold").asInt()).isEqualTo(95000);
+        assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(65000);
+    }
+
+    @Test
     void returnsLowConfidenceWhenPriceSpreadIsWide() {
         JsonNode estimate = service.build(
             currentAccessory(),
