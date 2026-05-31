@@ -9,7 +9,8 @@ Accessory recovery estimates will subtract Lost Ark's 5% sales fee and will use 
 The current implementation estimates recovery from exact-match auction median price. This change keeps that model, but makes two corrections:
 
 - `EstimatedRecoveryGold` becomes net seller proceeds after fee.
-- If the current accessory has a known `TradeRemainCount`, auction evidence must match the same `TradeRemainCount`.
+- If the current accessory has a known positive `TradeRemainCount`, auction evidence must match the same `TradeRemainCount`.
+- If the current accessory has `TradeRemainCount: 0`, recovery is 0 because the item cannot be sold.
 
 When the current accessory's trade count is unknown, the service keeps the existing fingerprint-only estimate but returns an explicit trade-count caveat so the UI and Sggu can describe the uncertainty.
 
@@ -19,6 +20,7 @@ When the current accessory's trade count is unknown, the service keeps the exist
 - Preserve gross median price in the response for diagnostics.
 - Return the fee amount used in the estimate.
 - Filter exact-match auction evidence by `TradeRemainCount` when the current accessory has a known trade count.
+- Return zero recovery when the current accessory has no remaining trades.
 - Keep recovery available when the current accessory trade count cannot be parsed, but label that state clearly.
 - Parse equipped accessory trade count from armory tooltip when available.
 - Keep existing UI request path and response shape backward-compatible.
@@ -111,12 +113,15 @@ Rounding uses ceiling because seller proceeds should not overstate recovery afte
 Trade count status values:
 
 - `matched`: current accessory has known `TradeRemainCount`, and evidence was filtered to that same count.
+- `untradable`: current accessory has `TradeRemainCount: 0`, so seller recovery is 0.
 - `unknown`: current accessory has no known `TradeRemainCount`, so evidence used fingerprint only.
 
 Evidence filtering:
 
 ```text
-if current.TradeRemainCount is known:
+if current.TradeRemainCount == 0:
+  recovery = 0, fee = 0, no auction evidence needed
+else if current.TradeRemainCount is known:
   keep candidate when fingerprint matches and candidate.TradeRemainCount == current.TradeRemainCount
 else:
   keep candidate when fingerprint matches
@@ -134,6 +139,7 @@ Supported line patterns:
 - `거래가능 횟수 2회`
 - `거래 가능 2회`
 - `거래 가능 횟수 : 2`
+- `거래 가능 횟수 : 0회`
 
 Implementation approach:
 
@@ -168,9 +174,11 @@ Backend tests:
   - high confidence subtracts 5% fee and calculates net cost from net recovery.
   - low confidence still reports gross, fee, and net recovery when median exists.
   - known current trade count filters out candidates with different `TradeRemainCount`.
+  - zero current trade count returns recovery 0 without auction evidence.
   - unknown current trade count keeps fingerprint-only behavior and returns `TradeCountStatus: "unknown"`.
 - `EquipmentNormalizerTest`
   - parses `TradeRemainCount` from an accessory tooltip line.
+  - parses `TradeRemainCount: 0` when the tooltip exposes zero remaining trades.
   - leaves `TradeRemainCount` absent when the tooltip has no trade count.
 - `AccessoryRecoveryControllerTest`
   - response includes fee/trade fields through the existing endpoint.
