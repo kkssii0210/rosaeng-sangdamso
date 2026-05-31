@@ -29,6 +29,16 @@ public class AccessoryAuctionSearchService {
     }
 
     public SearchResult searchAccessoryCandidates(String type, JsonNode currentAccessory, int equipmentIndex, boolean forceRefresh) {
+        return searchAccessoryCandidates(type, currentAccessory, equipmentIndex, forceRefresh, true);
+    }
+
+    public SearchResult searchAccessoryCandidates(
+        String type,
+        JsonNode currentAccessory,
+        int equipmentIndex,
+        boolean forceRefresh,
+        boolean eligibleOnly
+    ) {
         int categoryCode = categoryCode(type);
         List<AccessoryNormalizer.SearchOption> options = normalizer.buildRefinementSearchOptions(currentAccessory);
         Map<String, JsonNode> candidatesByKey = new LinkedHashMap<>();
@@ -51,7 +61,7 @@ public class AccessoryAuctionSearchService {
             for (JsonNode rawItem : rawItems) {
                 JsonNode candidate = normalizer.normalizeAuctionAccessoryItem(rawItem, type);
 
-                if (!normalizer.isEligibleAccessoryCandidate(candidate).eligible()) {
+                if (eligibleOnly && !normalizer.isEligibleAccessoryCandidate(candidate).eligible()) {
                     continue;
                 }
 
