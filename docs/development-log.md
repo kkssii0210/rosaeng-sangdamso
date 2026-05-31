@@ -349,7 +349,7 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - `CharacterService`가 market snapshot을 upgrade efficiency context에 전달한다. market snapshot 로딩 실패는 캐릭터 조회 실패로 전파하지 않고 `MarketDataStatus: unavailable`로 떨어진다.
 - Spring `GET /api/efficiency/spec-up/{name}`가 악세 교체 추천과 강화/보석/각인/아바타 후보를 통합해 Top 5를 반환하도록 추가했다.
 - 기존 Next.js `app/api/efficiency/spec-up/[name]/route.js`는 Spring 소유권 활성화 후 제거했다.
-- `/api/efficiency/accessories/recovery`는 별도 후속 이식 대상으로 남겼다.
+- `/api/efficiency/accessories/recovery`는 2026-05-31 작업에서 Spring Boot로 이식해 남은 Next.js API Route를 제거했다.
 
 ### 검증
 
@@ -363,7 +363,7 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 
 ### 다음 작업
 
-- `/api/efficiency/accessories/recovery`를 Spring Boot로 옮겨 효율 페이지의 남은 Next.js API Route를 줄인다.
+- Spring API 소유권 완료 이후에는 CI/CD, Docker Compose, 캐시/저장소 같은 운영성 포트폴리오 항목을 순서대로 보강한다.
 - Spring spec-up 추천 결과를 슥구 상담 context에 연결해 Top 5 추천 이유를 대화형으로 설명하게 한다.
 - 붐버 외 실제 캐릭터 fixture를 늘려 악세/보석/각인서 추천 순위의 회귀 검증 범위를 넓힌다.
 
