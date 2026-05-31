@@ -161,6 +161,37 @@ class EquipmentNormalizerTest {
         assertThat(normalized.get(0).get("TradeRemainCount").asInt()).isEqualTo(0);
     }
 
+    @Test
+    void extractsAccessoryTradeRemainCountFromIndentTooltipLines() throws Exception {
+        JsonNode equipment = equipment(
+            item("반지", "새벽의 반지", "https://cdn-lostark.game.onstove.com/sample-ring.png", "고대",
+                tooltip(
+                    83,
+                    sections(section("기본 효과", "힘 +17831", "민첩 +17831", "지능 +17831")),
+                    indentGroups(group("거래 정보", "거래 가능 횟수 : 1회"))
+                ))
+        );
+
+        JsonNode normalized = normalizer.normalize(equipment);
+
+        assertThat(normalized.get(0).get("TradeRemainCount").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void omitsTradeRemainCountForNonDetailedEquipmentTypes() throws Exception {
+        JsonNode equipment = equipment(
+            item("무기", "검은 밤의 장검", "https://cdn-lostark.game.onstove.com/sample-weapon.png", "고대",
+                tooltip(97, sections(
+                    section("기본 효과", "무기 공격력 +12345"),
+                    section("거래 정보", "거래 가능 횟수 : 2회")
+                )))
+        );
+
+        JsonNode normalized = normalizer.normalize(equipment);
+
+        assertThat(normalized.get(0).get("TradeRemainCount")).isNull();
+    }
+
     private JsonNode equipment(JsonNode... items) {
         return objectMapper.convertValue(Arrays.asList(items), JsonNode.class);
     }
