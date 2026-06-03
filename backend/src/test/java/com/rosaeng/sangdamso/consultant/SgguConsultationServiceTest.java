@@ -92,6 +92,30 @@ class SgguConsultationServiceTest {
     }
 
     @Test
+    void usesGrowthPriorityIntentForEfficiencySummaryPrompt() {
+        localLlmClient.text = """
+            {
+              "Mood": "warm-but-firm",
+              "Diagnosis": "상위 후보는 무기 11->12야.",
+              "Recommendation": "무기 11->12부터 보자.",
+              "NextAction": "강화 재료 가격을 확인해줘.",
+              "DisplayText": "무기 11->12부터 보는 게 좋아."
+            }
+            """;
+
+        service.consult(
+            SgguConsultationMode.EFFICIENCY_SUMMARY,
+            "전투력 효율 결과를 상담 카드로 요약해줘",
+            List.of(),
+            context()
+        );
+
+        assertThat(localLlmClient.messages.getLast().get("content"))
+            .contains("Intent: growth-priority")
+            .doesNotContain("Intent: data-limited");
+    }
+
+    @Test
     void returnsFallbackWhenLlmIsUnavailable() {
         localLlmClient.exception = new LocalLlmClient.LocalLlmException("LOCAL_LLM_UNAVAILABLE", "down");
 

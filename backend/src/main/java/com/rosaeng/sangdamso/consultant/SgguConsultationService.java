@@ -57,7 +57,7 @@ public class SgguConsultationService {
         JsonNode context
     ) {
         SgguConsultationMode safeMode = mode == null ? SgguConsultationMode.MAIN_CHAT : mode;
-        SgguConsultationIntent intent = intentClassifier.classify(message, conversation);
+        SgguConsultationIntent intent = intentFor(safeMode, message, conversation);
         String cacheKey = cacheKey(safeMode, message, conversation, context);
         long now = Instant.now().toEpochMilli();
         CachedConsultation cached = cache.get(cacheKey);
@@ -81,6 +81,18 @@ public class SgguConsultationService {
         } catch (LocalLlmClient.LocalLlmException | SgguResponseParser.InvalidSgguResponseException exception) {
             return fallbackComposer.compose(safeMode, intent, message, context);
         }
+    }
+
+    private SgguConsultationIntent intentFor(
+        SgguConsultationMode mode,
+        String message,
+        List<Map<String, String>> conversation
+    ) {
+        if (mode == SgguConsultationMode.EFFICIENCY_SUMMARY) {
+            return SgguConsultationIntent.GROWTH_PRIORITY;
+        }
+
+        return intentClassifier.classify(message, conversation);
     }
 
     private boolean isGrounded(SgguConsultationMode mode, JsonNode context, SgguConsultationResponse response) {
