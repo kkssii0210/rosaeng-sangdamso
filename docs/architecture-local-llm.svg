@@ -1,0 +1,249 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1050" viewBox="0 0 1800 1050" role="img" aria-labelledby="title desc">
+  <title id="title">로생상담소 목표 아키텍처 모식도</title>
+  <desc id="desc">로생상담소의 브라우저, Next.js, Spring Boot BFF, 도메인 서비스, 외부 런타임, PostgreSQL 기록 레이어를 보여주는 아키텍처 모식도</desc>
+  <defs>
+    <filter id="shadow" x="-8%" y="-12%" width="116%" height="136%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#51321b" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow" markerWidth="18" markerHeight="16" refX="15" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 1.5 1.5 L 16 8 L 1.5 14.5 z" fill="#2b2119"/>
+    </marker>
+    <marker id="arrowSoft" markerWidth="13" markerHeight="11" refX="11" refY="5.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 1 1 L 12 5.5 L 1 10 z" fill="#9b6b2e"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f1e6; }
+      .title {
+        font: 850 48px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #23160d;
+      }
+      .subtitle {
+        font: 500 20px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #5b4634;
+      }
+      .panel {
+        fill: rgba(255, 252, 245, 0.78);
+        stroke: #c38b43;
+        stroke-width: 2;
+      }
+      .panel-title {
+        fill: #3a2517;
+        filter: url(#shadow);
+      }
+      .panel-title-text {
+        font: 850 20px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #fff8ec;
+      }
+      .box {
+        fill: #fffdf7;
+        stroke: #5b3921;
+        stroke-width: 2;
+        filter: url(#shadow);
+      }
+      .blue { fill: #eef8ff; stroke: #1f638a; }
+      .green { fill: #eff9ed; stroke: #397a44; }
+      .gold { fill: #fff6dc; stroke: #a66a20; }
+      .purple { fill: #f4efff; stroke: #6d55a2; }
+      .red { fill: #fff0eb; stroke: #b2523b; }
+      .gray { fill: #f3f0ea; stroke: #6a6258; }
+      .dashed { stroke-dasharray: 8 7; }
+      .box-title {
+        font: 850 20px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #21160f;
+      }
+      .box-copy {
+        font: 540 15px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #33271f;
+      }
+      .box-small {
+        font: 500 13px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #5a4738;
+      }
+      .layer-title {
+        font: 850 24px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #24170d;
+      }
+      .layer-note {
+        font: 500 16px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #5b4634;
+      }
+      .tag {
+        fill: #f3e1c5;
+        stroke: #b07a34;
+        stroke-width: 1.4;
+      }
+      .tag-text {
+        font: 800 13px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #5a3518;
+      }
+      .flow {
+        fill: none;
+        stroke: #2b2119;
+        stroke-width: 3.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrow);
+      }
+      .flow-soft {
+        fill: none;
+        stroke: #9b6b2e;
+        stroke-width: 2.6;
+        stroke-dasharray: 8 8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-end: url(#arrowSoft);
+      }
+      .foot {
+        font: 600 15px "Malgun Gothic", "Noto Sans KR", "Pretendard", system-ui, sans-serif;
+        fill: #513b2b;
+      }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1800" height="1050"/>
+  <rect x="28" y="25" width="1744" height="996" rx="26" fill="none" stroke="#d0a05c" stroke-width="2" opacity="0.55"/>
+
+  <text x="900" y="70" text-anchor="middle" class="title">로생상담소 목표 아키텍처</text>
+  <text x="900" y="108" text-anchor="middle" class="subtitle">공식 Lostark API 기반 캐릭터 분석 + Spring 계산 엔진 + 로컬 LLM 상담 + PostgreSQL 추천 기록</text>
+
+  <!-- Main runtime panels -->
+  <rect x="52" y="156" width="244" height="632" rx="16" class="panel"/>
+  <rect x="320" y="156" width="262" height="632" rx="16" class="panel"/>
+  <rect x="606" y="156" width="696" height="632" rx="16" class="panel"/>
+  <line x1="896" y1="190" x2="896" y2="764" stroke="#d8b077" stroke-width="2" stroke-dasharray="8 8"/>
+  <rect x="1326" y="156" width="426" height="632" rx="16" class="panel"/>
+
+  <rect x="78" y="132" width="192" height="46" rx="9" class="panel-title"/>
+  <rect x="352" y="132" width="198" height="46" rx="9" class="panel-title"/>
+  <rect x="820" y="132" width="268" height="46" rx="9" class="panel-title"/>
+  <rect x="1392" y="132" width="294" height="46" rx="9" class="panel-title"/>
+
+  <text x="174" y="162" text-anchor="middle" class="panel-title-text">1) Client</text>
+  <text x="451" y="162" text-anchor="middle" class="panel-title-text">2) Frontend</text>
+  <text x="954" y="162" text-anchor="middle" class="panel-title-text">3) Spring Boot Backend</text>
+  <text x="1539" y="162" text-anchor="middle" class="panel-title-text">4) External Runtime</text>
+
+  <text x="751" y="203" text-anchor="middle" class="layer-note">API Layer</text>
+  <text x="1111" y="203" text-anchor="middle" class="layer-note">Service Layer</text>
+
+  <!-- Client -->
+  <rect x="84" y="224" width="180" height="132" rx="14" class="box"/>
+  <text x="174" y="262" text-anchor="middle" class="box-title">User Browser</text>
+  <text x="174" y="296" text-anchor="middle" class="box-copy">캐릭터 조회</text>
+  <text x="174" y="322" text-anchor="middle" class="box-copy">스펙업 상담</text>
+
+  <ellipse cx="174" cy="468" rx="70" ry="16" fill="#7a8b8e" opacity="0.18"/>
+  <image href="../public/sggu-cutout.png" x="108" y="356" width="132" height="198" preserveAspectRatio="xMidYMid meet" filter="url(#shadow)"/>
+
+  <rect x="84" y="586" width="180" height="132" rx="14" class="box gold"/>
+  <text x="174" y="624" text-anchor="middle" class="box-title">UI Screens</text>
+  <text x="174" y="658" text-anchor="middle" class="box-copy">메인 상담</text>
+  <text x="174" y="684" text-anchor="middle" class="box-copy">장비창 / 효율</text>
+
+  <!-- Frontend -->
+  <rect x="352" y="224" width="198" height="160" rx="14" class="box gold"/>
+  <text x="451" y="262" text-anchor="middle" class="box-title">Next.js App</text>
+  <text x="451" y="296" text-anchor="middle" class="box-copy">React UI 렌더링</text>
+  <text x="451" y="322" text-anchor="middle" class="box-copy">same-origin fetch</text>
+  <text x="451" y="348" text-anchor="middle" class="box-small">app/page.jsx, /efficiency</text>
+
+  <rect x="352" y="494" width="198" height="150" rx="14" class="box"/>
+  <text x="451" y="532" text-anchor="middle" class="box-title">Client State</text>
+  <text x="451" y="566" text-anchor="middle" class="box-copy">최근 대화 표시</text>
+  <text x="451" y="592" text-anchor="middle" class="box-copy">상담 context 생성</text>
+  <text x="451" y="618" text-anchor="middle" class="box-small">localStorage: last character</text>
+
+  <!-- Spring backend -->
+  <rect x="638" y="224" width="226" height="188" rx="14" class="box green"/>
+  <text x="751" y="262" text-anchor="middle" class="box-title">BFF Controllers</text>
+  <text x="751" y="296" text-anchor="middle" class="box-copy">/api/characters</text>
+  <text x="751" y="322" text-anchor="middle" class="box-copy">/api/market/snapshot</text>
+  <text x="751" y="348" text-anchor="middle" class="box-copy">/api/efficiency/spec-up</text>
+  <text x="751" y="374" text-anchor="middle" class="box-copy">/api/consult/sggu</text>
+
+  <rect x="638" y="494" width="226" height="150" rx="14" class="box"/>
+  <text x="751" y="532" text-anchor="middle" class="box-title">Request Boundary</text>
+  <text x="751" y="566" text-anchor="middle" class="box-copy">입력 검증</text>
+  <text x="751" y="592" text-anchor="middle" class="box-copy">에러 코드 변환</text>
+  <text x="751" y="618" text-anchor="middle" class="box-copy">응답 DTO 조립</text>
+
+  <!-- Domain -->
+  <rect x="952" y="208" width="318" height="106" rx="14" class="box blue"/>
+  <text x="1111" y="244" text-anchor="middle" class="box-title">CharacterService</text>
+  <text x="1111" y="276" text-anchor="middle" class="box-copy">armory 병렬 조회 / 정규화</text>
+  <text x="1111" y="298" text-anchor="middle" class="box-small">profile, equipment, gems, cards, engravings</text>
+
+  <rect x="952" y="342" width="318" height="106" rx="14" class="box blue"/>
+  <text x="1111" y="378" text-anchor="middle" class="box-title">MarketSnapshotService</text>
+  <text x="1111" y="410" text-anchor="middle" class="box-copy">시장가 / 경매장 스냅샷</text>
+  <text x="1111" y="432" text-anchor="middle" class="box-small">현재 구현: 5분 메모리 캐시</text>
+
+  <rect x="952" y="476" width="318" height="118" rx="14" class="box gold"/>
+  <text x="1111" y="512" text-anchor="middle" class="box-title">SpecUpEfficiencyService</text>
+  <text x="1111" y="544" text-anchor="middle" class="box-copy">전투력 분석 / 악세 교체 / 강화 효율</text>
+  <text x="1111" y="568" text-anchor="middle" class="box-copy">Top 5 추천 후보 병합</text>
+
+  <rect x="952" y="622" width="318" height="128" rx="14" class="box red"/>
+  <text x="1111" y="658" text-anchor="middle" class="box-title">SgguConsultationService</text>
+  <text x="1111" y="690" text-anchor="middle" class="box-copy">IntentClassifier / PromptBuilder</text>
+  <text x="1111" y="714" text-anchor="middle" class="box-copy">ResponseParser / FallbackComposer</text>
+  <text x="1111" y="738" text-anchor="middle" class="box-small">LLM은 설명, 순위와 숫자는 계산 엔진</text>
+
+  <!-- Runtime -->
+  <rect x="1360" y="224" width="164" height="136" rx="14" class="box blue"/>
+  <text x="1442" y="262" text-anchor="middle" class="box-title">Lostark</text>
+  <text x="1442" y="296" text-anchor="middle" class="box-copy">Open API</text>
+  <text x="1442" y="322" text-anchor="middle" class="box-small">armory, market</text>
+
+  <rect x="1560" y="224" width="158" height="136" rx="14" class="box blue"/>
+  <text x="1639" y="262" text-anchor="middle" class="box-title">Auction</text>
+  <text x="1639" y="296" text-anchor="middle" class="box-copy">Market API</text>
+  <text x="1639" y="322" text-anchor="middle" class="box-small">items, prices</text>
+
+  <rect x="1360" y="500" width="164" height="146" rx="14" class="box purple"/>
+  <text x="1442" y="538" text-anchor="middle" class="box-title">Ollama</text>
+  <text x="1442" y="572" text-anchor="middle" class="box-copy">qwen2.5:7b</text>
+  <text x="1442" y="598" text-anchor="middle" class="box-small">local LLM</text>
+  <text x="1442" y="624" text-anchor="middle" class="box-small">Windows host</text>
+
+  <rect x="1560" y="500" width="158" height="146" rx="14" class="box gold dashed"/>
+  <text x="1639" y="538" text-anchor="middle" class="box-title">V2 RAG</text>
+  <text x="1639" y="572" text-anchor="middle" class="box-copy">패치노트</text>
+  <text x="1639" y="598" text-anchor="middle" class="box-copy">가이드 문서</text>
+  <text x="1639" y="624" text-anchor="middle" class="box-small">지식 확장 후보</text>
+
+  <!-- Storage layer -->
+  <rect x="320" y="792" width="1232" height="188" rx="16" class="panel"/>
+  <text x="352" y="852" class="layer-title">6) Persistence Layer</text>
+  <text x="352" y="882" class="layer-note">목표 확장: 추천 기록 재현 / 비교 화면</text>
+
+  <rect x="646" y="822" width="342" height="126" rx="14" class="box purple dashed"/>
+  <text x="817" y="858" text-anchor="middle" class="box-title">PostgreSQL</text>
+  <text x="817" y="890" text-anchor="middle" class="box-copy">character_snapshots / market_snapshots</text>
+  <text x="817" y="916" text-anchor="middle" class="box-copy">recommendation_runs / candidates</text>
+  <text x="817" y="940" text-anchor="middle" class="box-small">consultation_sessions / messages</text>
+
+  <rect x="1040" y="822" width="212" height="126" rx="14" class="box gray"/>
+  <text x="1146" y="862" text-anchor="middle" class="box-title">Flyway</text>
+  <text x="1146" y="896" text-anchor="middle" class="box-copy">schema version</text>
+  <text x="1146" y="922" text-anchor="middle" class="box-small">migration history</text>
+
+  <rect x="1304" y="822" width="230" height="126" rx="14" class="box"/>
+  <text x="1419" y="862" text-anchor="middle" class="box-title">History UI</text>
+  <text x="1419" y="896" text-anchor="middle" class="box-copy">이전 추천</text>
+  <text x="1419" y="922" text-anchor="middle" class="box-copy">현재 추천 비교</text>
+
+  <!-- Main request flow -->
+  <path class="flow" d="M 264 290 H 342"/>
+  <path class="flow" d="M 550 302 H 628"/>
+  <path class="flow" d="M 864 318 H 942"/>
+  <path class="flow" d="M 1270 260 H 1350"/>
+  <path class="flow" d="M 1270 398 H 1350"/>
+  <path class="flow" d="M 1270 686 C 1338 686, 1316 573, 1350 573"/>
+
+  <!-- Response and context flow -->
+  <path class="flow" d="M 952 535 C 910 535, 910 570, 874 570"/>
+  <path class="flow" d="M 638 570 H 560"/>
+  <path class="flow" d="M 352 570 C 320 586, 318 636, 274 652"/>
+
+</svg>
