@@ -410,6 +410,49 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - LLM 응답 신뢰도는 현재 보수적 keyword grounding 기반이다. 이후 RAG와 함께 top candidate id/label을 구조적으로 echo하게 만들어 검증을 더 단단히 한다.
 - 서포터 기준 상담과 효율 계산은 아직 범위 밖이다. 딜러 기준이 안정화된 뒤 support profile을 별도 mode로 확장한다.
 
+## 2026-06-03
+
+### 목표
+
+- 슥구 상담이 어떤 질문에도 비슷한 스펙업 추천만 반복하는 문제를 줄인다.
+- 로컬 LLM 응답이 JSON 형태를 흔들어도 Spring Boot 상담 API가 안정적으로 구조화 응답을 반환하게 만든다.
+- 포트폴리오 README에서 현재 구조와 목표 구조를 한눈에 설명할 수 있도록 아키텍처 그림을 갱신한다.
+
+### 변경
+
+- `docs/superpowers/specs/2026-06-03-sggu-llm-response-normalization-design.md`와 `docs/superpowers/plans/2026-06-03-sggu-llm-response-normalization.md`에 로컬 LLM 응답 정규화 설계와 실행 계획을 남겼다.
+- `SgguResponseParser`가 Ollama 응답의 필드를 문자열로 더 안정적으로 정규화하도록 보강했다. 단순 배열은 읽을 수 있는 텍스트로 보존하고, 객체나 중첩 배열처럼 상담 UI에 바로 쓰기 어려운 값은 invalid response로 처리한다.
+- 로컬 LLM prompt에서 JSON만 출력하도록 지시를 강화해, 설명 문장과 JSON이 섞여 fallback으로 떨어지는 경우를 줄였다.
+- `docs/superpowers/specs/2026-06-03-sggu-intent-counselor-design.md`와 `docs/superpowers/plans/2026-06-03-sggu-intent-counselor.md`에 intent 기반 상담사 설계를 작성했다.
+- `SgguIntentClassifier`를 추가해 사용자의 질문을 스펙업 우선순위, 비교, 비용/예산, 캐릭터 진단, 용어 설명, 일반 상담, 데이터 부족 상황으로 분류하게 했다.
+- `SgguPromptBuilder`가 분류된 intent별 상담 지침을 prompt에 넣도록 바꿨다. 같은 character context라도 질문 의도에 맞춰 설명, 비교, 예산 안내, 진단 중심 답변이 나오도록 유도한다.
+- `SgguFallbackComposer`도 intent-aware 구조로 바꿔 LLM 실패 시에도 매번 1순위 스펙업 후보만 반복하지 않게 했다.
+- 슥구 말투를 존댓말 캐릭터로 고정했다. `무섭슥다` 같은 반말형 슥구체는 금지하고, `무섭슥니다`, `확인했슥니다`처럼 기본 단어 안에 자연스럽게 `슥`을 넣는 규칙을 prompt와 fallback 문구에 반영했다.
+- `SgguConsultationService`가 intent를 한 번 분류한 뒤 prompt 생성과 fallback 생성 양쪽에 같은 intent를 전달하도록 오케스트레이션을 정리했다.
+- README 상단 아키텍처 설명을 Spring Boot BFF, 로컬 LLM, PostgreSQL/Flyway 목표 확장 중심으로 갱신했다.
+- `docs/architecture-local-llm.svg`를 새 아키텍처 원본으로 추가하고, `docs/architecture-local-llm.png`를 다시 렌더링했다.
+- 아키텍처 그림은 Client, Frontend, Spring Boot Backend, External Runtime, Persistence Layer로 나누고, Spring Boot Backend 안에서 API Layer와 Service Layer를 구분하도록 정리했다.
+- Client 영역에는 현재 프로젝트에서 쓰는 슥구 캐릭터 이미지를 넣고, 사용하지 않는 옛 슥구 에셋은 제거했다.
+
+### 검증
+
+- `cd backend && ./mvnw -Dtest=SgguResponseParserTest,SgguIntentClassifierTest,SgguPromptBuilderTest,SgguFallbackComposerTest,SgguConsultationServiceTest,ConsultantControllerTest test`
+- `cd backend && ./mvnw test`
+- `npm test`
+- `npm run lint`
+- `npm run build`
+- `npm run smoke:sggu`
+- `git diff --check`
+- `python3 -c "import xml.etree.ElementTree as ET; ET.parse('docs/architecture-local-llm.svg')"`
+- Chrome headless screenshot 렌더링으로 `docs/architecture-local-llm.png` 출력 상태를 확인했다.
+
+### 다음 작업
+
+- intent 분류는 현재 rule 기반이므로 실제 사용자 질문 로그가 쌓이면 오분류 사례를 fixture로 추가한다.
+- LLM 응답 검증은 JSON schema와 keyword grounding 중심이다. 다음 단계에서는 추천 후보 id/label을 구조적으로 echo하게 만들어 검증 정확도를 높인다.
+- PostgreSQL을 붙일 때는 캐릭터 스냅샷, 추천 실행 기록, 상담 세션을 먼저 저장 대상으로 잡고, 조회 히스토리와 RAG 문서 저장소는 후순위로 둔다.
+- 포트폴리오 문서에는 Spring Boot가 실제로 담당하는 API 소유권과 목표 확장 영역을 더 짧은 발표용 문장으로 정리할 수 있다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.
