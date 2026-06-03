@@ -81,6 +81,47 @@ class SgguPromptBuilderTest {
     }
 
     @Test
+    void buildsIntentInstructionsAndPoliteSgguVoiceRules() {
+        var messages = builder.build(
+            SgguConsultationMode.MAIN_CHAT,
+            SgguConsultationIntent.COMPARISON,
+            "무기 강화랑 보석 중 뭐가 나아요?",
+            List.of(),
+            toJsonNode(Map.of("profile", Map.of("characterName", "붐버")))
+        );
+
+        assertThat(messages.get(0).get("content"))
+            .contains("사용자의 실제 질문에 먼저 답한다")
+            .contains("존댓말 슥구체")
+            .contains("확인했슥니다")
+            .contains("확인했슥습니다 금지")
+            .contains("좋슥다")
+            .contains("무섭슥다")
+            .contains("하슥다");
+        assertThat(messages.getLast().get("content"))
+            .contains("Intent: comparison")
+            .contains("비교 질문이므로")
+            .contains("비교 기준")
+            .contains("정보가 부족하면 질문 1개");
+    }
+
+    @Test
+    void buildsInvestmentRiskInstructions() {
+        var messages = builder.build(
+            SgguConsultationMode.MAIN_CHAT,
+            SgguConsultationIntent.INVESTMENT_RISK,
+            "이 악세 사도 될까요?",
+            List.of(),
+            toJsonNode(Map.of("profile", Map.of("characterName", "붐버")))
+        );
+
+        assertThat(messages.getLast().get("content"))
+            .contains("Intent: investment-risk")
+            .contains("위험하면 부드럽지만 단호하게")
+            .contains("없는 가격이나 시세를 만들지 않는다");
+    }
+
+    @Test
     void legacyBuildDelegatesToMainChatMode() {
         var messages = builder.build(
             "뭐부터 올릴까?",
