@@ -9,12 +9,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class SgguIntentClassifier {
 
-    private static final Set<String> SAFE_ROLES = Set.of("user", "assistant", "system");
+    private static final Set<String> SAFE_ROLES = Set.of("user", "assistant");
     private static final List<String> COMPARISON_TERMS = List.of(
-        " vs ", "vs", "비교", "중 뭐", "중에", "둘 중", "랑", "하고"
+        " vs ", "vs", "비교", "중 뭐", "중에", "둘 중"
+    );
+    private static final List<String> COMPARISON_CONJUNCTION_TERMS = List.of(
+        "랑", "하고"
+    );
+    private static final List<String> COMPARATIVE_TERMS = List.of(
+        "나아", "좋", "먼저", "뭐"
     );
     private static final List<String> INVESTMENT_RISK_TERMS = List.of(
-        "사도", "살까", "구매", "매물", "강화해도", "질러도", "투자", "위험", "괜찮"
+        "사도", "살까", "구매", "매물", "강화해도", "질러도", "투자", "위험", "괜찮", "가도 돼"
     );
     private static final List<String> CHARACTER_REVIEW_TERMS = List.of(
         "문제점", "문제", "진단", "어때", "평가", "상태", "약점", "부족", "봐줘", "봐주세요"
@@ -46,16 +52,16 @@ public class SgguIntentClassifier {
             return SgguConsultationIntent.COMPARISON;
         }
 
-        if (containsAny(combined, INVESTMENT_RISK_TERMS)) {
-            return SgguConsultationIntent.INVESTMENT_RISK;
-        }
-
         if (containsAny(current, CHARACTER_REVIEW_TERMS)) {
             return SgguConsultationIntent.CHARACTER_REVIEW;
         }
 
         if (containsAny(current, GROWTH_PRIORITY_TERMS)) {
             return SgguConsultationIntent.GROWTH_PRIORITY;
+        }
+
+        if (containsAny(combined, INVESTMENT_RISK_TERMS)) {
+            return SgguConsultationIntent.INVESTMENT_RISK;
         }
 
         return SgguConsultationIntent.DATA_LIMITED;
@@ -66,7 +72,11 @@ public class SgguIntentClassifier {
             return true;
         }
 
-        return value.contains("중") && (value.contains("나아") || value.contains("좋") || value.contains("먼저"));
+        if (value.contains("중") && containsAny(value, COMPARATIVE_TERMS)) {
+            return true;
+        }
+
+        return containsAny(value, COMPARISON_CONJUNCTION_TERMS) && containsAny(value, COMPARATIVE_TERMS);
     }
 
     private String normalizeConversation(List<Map<String, String>> conversation) {

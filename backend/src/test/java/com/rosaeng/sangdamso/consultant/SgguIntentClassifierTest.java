@@ -65,4 +65,26 @@ class SgguIntentClassifierTest {
             List.of(Map.of("role", "user", "content", "고대 악세 매물을 보고 있어요."))
         )).isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
     }
+
+    @Test
+    void currentCharacterReviewOverridesPriorInvestmentConversation() {
+        assertThat(classifier.classify(
+            "현재 상태 봐주세요",
+            List.of(Map.of("role", "user", "content", "고대 악세 매물을 보고 있어요."))
+        )).isEqualTo(SgguConsultationIntent.CHARACTER_REVIEW);
+    }
+
+    @Test
+    void currentGrowthPriorityOverridesPriorInvestmentConversation() {
+        assertThat(classifier.classify(
+            "뭐부터 올릴까요?",
+            List.of(Map.of("role", "user", "content", "고대 악세 매물을 보고 있어요."))
+        )).isEqualTo(SgguConsultationIntent.GROWTH_PRIORITY);
+    }
+
+    @Test
+    void conjunctionAloneDoesNotClassifyAsComparison() {
+        assertThat(classifier.classify("친구랑 레이드 가도 돼?", List.of()))
+            .isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
+    }
 }
