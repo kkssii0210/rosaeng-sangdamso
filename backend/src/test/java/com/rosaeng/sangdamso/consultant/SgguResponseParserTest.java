@@ -127,6 +127,29 @@ class SgguResponseParserTest {
     }
 
     @Test
+    void rejectsArrayContainingObjectFieldAsInvalidSgguResponse() {
+        try {
+            parser.parse(
+                SgguConsultationMode.MAIN_CHAT,
+                """
+                    {
+                      "Mood": "warm-but-firm",
+                      "Diagnosis": "무기 강화가 1순위야.",
+                      "Recommendation": ["무기 11->12부터 확인하자.", {"detail": "가격 확인"}],
+                      "NextAction": "강화 재료 가격을 확인해줘.",
+                      "DisplayText": "무기 11->12부터 보자."
+                    }
+                    """
+            );
+        } catch (SgguResponseParser.InvalidSgguResponseException exception) {
+            assertThat(exception.getMessage()).contains("Recommendation");
+            return;
+        }
+
+        throw new AssertionError("Expected InvalidSgguResponseException");
+    }
+
+    @Test
     void rejectsMalformedJson() {
         try {
             parser.parse(SgguConsultationMode.MAIN_CHAT, "지금은 보석부터 보는 게 좋아.");
