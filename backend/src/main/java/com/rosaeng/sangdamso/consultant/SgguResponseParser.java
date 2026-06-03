@@ -2,6 +2,7 @@ package com.rosaeng.sangdamso.consultant;
 
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.child;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,8 +66,53 @@ public class SgguResponseParser {
     }
 
     private String text(JsonNode node, String fieldName) {
-        JsonNode value = child(node, fieldName);
-        return value == null || value.isNull() ? "" : value.asString().trim();
+        return coerceText(child(node, fieldName), fieldName).trim();
+    }
+
+    private String coerceText(JsonNode value, String fieldName) {
+        if (value == null || value.isNull()) {
+            return "";
+        }
+
+        if (value.isTextual()) {
+            return value.asString();
+        }
+
+        if (value.isNumber() || value.isBoolean()) {
+            return value.toString();
+        }
+
+        if (value.isArray()) {
+            return arrayText(value, fieldName);
+        }
+
+        throw unsupportedFieldType(fieldName);
+    }
+
+    private String arrayText(JsonNode value, String fieldName) {
+        List<String> items = new ArrayList<>();
+
+        for (JsonNode item : value) {
+            if (item == null || item.isNull()) {
+                continue;
+            }
+
+            if (item.isArray() || item.isObject()) {
+                throw unsupportedFieldType(fieldName);
+            }
+
+            String text = coerceText(item, fieldName).trim();
+
+            if (!text.isBlank()) {
+                items.add(text);
+            }
+        }
+
+        return String.join(" ", items);
+    }
+
+    private InvalidSgguResponseException unsupportedFieldType(String fieldName) {
+        return new InvalidSgguResponseException("Sggu response field has unsupported type: " + fieldName);
     }
 
     private String clamp(String value) {

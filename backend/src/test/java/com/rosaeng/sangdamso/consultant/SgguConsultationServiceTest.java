@@ -84,6 +84,53 @@ class SgguConsultationServiceTest {
     }
 
     @Test
+    void returnsValidatedLlmConsultationWhenRequiredFieldIsSimpleArray() {
+        localLlmClient.text = """
+            {
+              "Mood": "warm-but-firm",
+              "Diagnosis": "무기 강화가 1순위야.",
+              "Recommendation": ["무기 11->12부터 보자.", "구매 전 가격을 확인해줘."],
+              "NextAction": "강화 재료 가격을 확인해줘.",
+              "DisplayText": ["무기 11->12부터 보는 게 좋아.", "가격은 다시 확인해줘."]
+            }
+            """;
+
+        SgguConsultationResponse response = service.consult(
+            SgguConsultationMode.MAIN_CHAT,
+            "뭐부터 올릴까?",
+            List.of(),
+            context()
+        );
+
+        assertThat(response.source()).isEqualTo("llm");
+        assertThat(response.recommendation()).contains("무기 11->12부터 보자.");
+        assertThat(response.displayText()).contains("가격은 다시 확인해줘.");
+    }
+
+    @Test
+    void returnsFallbackWhenLlmReturnsUnsupportedObjectField() {
+        localLlmClient.text = """
+            {
+              "Mood": "warm-but-firm",
+              "Diagnosis": {"summary": "무기 강화가 1순위야."},
+              "Recommendation": "무기 11->12부터 보자.",
+              "NextAction": "강화 재료 가격을 확인해줘.",
+              "DisplayText": "무기 11->12부터 보는 게 좋아."
+            }
+            """;
+
+        SgguConsultationResponse response = service.consult(
+            SgguConsultationMode.MAIN_CHAT,
+            "뭐부터 올릴까?",
+            List.of(),
+            context()
+        );
+
+        assertThat(response.source()).isEqualTo("fallback");
+        assertThat(response.recommendation()).contains("무기 11->12");
+    }
+
+    @Test
     void reusesCachedValidatedResponseForSameFacts() {
         localLlmClient.text = """
             {

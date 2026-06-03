@@ -57,6 +57,76 @@ class SgguResponseParserTest {
     }
 
     @Test
+    void parsesSimpleArrayFieldsAsText() {
+        SgguConsultationResponse response = parser.parse(
+            SgguConsultationMode.MAIN_CHAT,
+            """
+                {
+                  "Mood": "warm-but-firm",
+                  "Empathy": true,
+                  "Diagnosis": "무기 강화가 1순위야.",
+                  "Recommendation": ["무기 11->12부터 확인하자.", "구매 전 가격을 다시 보자."],
+                  "Caution": 123,
+                  "NextAction": "강화 재료 가격을 확인해줘.",
+                  "DisplayText": ["무기 11->12부터 보자.", "가격은 다시 확인해줘."]
+                }
+                """
+        );
+
+        assertThat(response.source()).isEqualTo("llm");
+        assertThat(response.empathy()).isEqualTo("true");
+        assertThat(response.recommendation()).isEqualTo("무기 11->12부터 확인하자. 구매 전 가격을 다시 보자.");
+        assertThat(response.caution()).isEqualTo("123");
+        assertThat(response.displayText()).isEqualTo("무기 11->12부터 보자. 가격은 다시 확인해줘.");
+    }
+
+    @Test
+    void rejectsObjectFieldAsInvalidSgguResponse() {
+        try {
+            parser.parse(
+                SgguConsultationMode.MAIN_CHAT,
+                """
+                    {
+                      "Mood": "warm-but-firm",
+                      "Diagnosis": {"summary": "무기 강화가 1순위야."},
+                      "Recommendation": "무기 11->12부터 확인하자.",
+                      "NextAction": "강화 재료 가격을 확인해줘.",
+                      "DisplayText": "무기 11->12부터 보자."
+                    }
+                    """
+            );
+        } catch (SgguResponseParser.InvalidSgguResponseException exception) {
+            assertThat(exception.getMessage()).contains("Diagnosis");
+            return;
+        }
+
+        throw new AssertionError("Expected InvalidSgguResponseException");
+    }
+
+    @Test
+    void rejectsNestedArrayFieldAsInvalidSgguResponse() {
+        try {
+            parser.parse(
+                SgguConsultationMode.MAIN_CHAT,
+                """
+                    {
+                      "Mood": "warm-but-firm",
+                      "Diagnosis": "무기 강화가 1순위야.",
+                      "Recommendation": [["무기 11->12부터 확인하자."]],
+                      "NextAction": "강화 재료 가격을 확인해줘.",
+                      "DisplayText": "무기 11->12부터 보자."
+                    }
+                    """
+            );
+        } catch (SgguResponseParser.InvalidSgguResponseException exception) {
+            assertThat(exception.getMessage()).contains("Recommendation");
+            return;
+        }
+
+        throw new AssertionError("Expected InvalidSgguResponseException");
+    }
+
+    @Test
     void rejectsMalformedJson() {
         try {
             parser.parse(SgguConsultationMode.MAIN_CHAT, "지금은 보석부터 보는 게 좋아.");
