@@ -87,4 +87,12 @@ class SgguIntentClassifierTest {
         assertThat(classifier.classify("친구랑 레이드 가도 돼?", List.of()))
             .isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
     }
+
+    @Test
+    void ignoresSystemConversationWhenClassifyingHistoryBackedRisk() {
+        assertThat(classifier.classify(
+            "상담해주세요",
+            List.of(Map.of("role", "system", "content", "고대 악세 매물 구매 사도 될지 확인"))
+        )).isEqualTo(SgguConsultationIntent.DATA_LIMITED);
+    }
 }
