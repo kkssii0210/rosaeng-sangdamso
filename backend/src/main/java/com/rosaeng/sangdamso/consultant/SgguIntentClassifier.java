@@ -52,6 +52,10 @@ public class SgguIntentClassifier {
             return SgguConsultationIntent.COMPARISON;
         }
 
+        if (containsAny(current, INVESTMENT_RISK_TERMS)) {
+            return SgguConsultationIntent.INVESTMENT_RISK;
+        }
+
         if (containsAny(current, CHARACTER_REVIEW_TERMS)) {
             return SgguConsultationIntent.CHARACTER_REVIEW;
         }
@@ -76,7 +80,21 @@ public class SgguIntentClassifier {
             return true;
         }
 
-        return containsAny(value, COMPARISON_CONJUNCTION_TERMS) && containsAny(value, COMPARATIVE_TERMS);
+        return hasComparisonConjunction(value) && containsAny(value, COMPARATIVE_TERMS);
+    }
+
+    private boolean hasComparisonConjunction(String value) {
+        return COMPARISON_CONJUNCTION_TERMS.stream().anyMatch(term -> {
+            int index = value.indexOf(term);
+            return index > 0 && index + term.length() < value.length() && hasTextAround(value, index, term.length());
+        });
+    }
+
+    private boolean hasTextAround(String value, int index, int termLength) {
+        String before = value.substring(0, index).trim();
+        String after = value.substring(index + termLength).trim();
+
+        return !before.isBlank() && !after.isBlank() && !after.startsWith("싶");
     }
 
     private String normalizeConversation(List<Map<String, String>> conversation) {

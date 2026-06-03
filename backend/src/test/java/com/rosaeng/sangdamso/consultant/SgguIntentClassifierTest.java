@@ -40,6 +40,8 @@ class SgguIntentClassifierTest {
             .isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
         assertThat(classifier.classify("지금 강화 질러도 괜찮나요?", List.of()))
             .isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
+        assertThat(classifier.classify("이 악세 매물 어때요, 사도 될까요?", List.of()))
+            .isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
     }
 
     @Test
@@ -86,6 +88,8 @@ class SgguIntentClassifierTest {
     void conjunctionAloneDoesNotClassifyAsComparison() {
         assertThat(classifier.classify("친구랑 레이드 가도 돼?", List.of()))
             .isEqualTo(SgguConsultationIntent.INVESTMENT_RISK);
+        assertThat(classifier.classify("강화하고 싶은데 뭐가 좋나요?", List.of()))
+            .isNotEqualTo(SgguConsultationIntent.COMPARISON);
     }
 
     @Test
