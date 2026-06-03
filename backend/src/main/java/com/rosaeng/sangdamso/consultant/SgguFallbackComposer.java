@@ -94,9 +94,14 @@ public class SgguFallbackComposer {
     private SgguConsultationResponse comparison(SgguConsultationMode mode, JsonNode context) {
         JsonNode topCandidate = topCandidate(context);
         String label = text(topCandidate, "label");
-        String knownCandidate = label.isBlank() ? "현재 제공된 후보" : label;
-        String displayText = "비교는 예산과 목표 콘텐츠가 같이 있어야 정확하슥니다. 제공된 계산에서 먼저 확인되는 후보는 "
-            + knownCandidate + "입니다. 비교하려는 두 선택지와 예산을 알려주시면 더 정확히 보겠슥니다.";
+        String finding = label.isBlank()
+            ? "아직 제공된 계산에서 확정된 비교 후보가 없습니다."
+            : "제공된 계산에서 먼저 확인되는 후보는 " + label + "입니다.";
+        String recommendation = label.isBlank()
+            ? "비교하려는 두 선택지의 비용과 기대 상승폭이 함께 필요합니다."
+            : label + "은 후보로 보이지만, 비교 대상의 비용과 기대 상승폭이 함께 필요합니다.";
+        String displayText = "비교는 예산과 목표 콘텐츠가 같이 있어야 정확하슥니다. "
+            + finding + " 비교하려는 두 선택지와 예산을 알려주시면 더 정확히 보겠슥니다.";
 
         return new SgguConsultationResponse(
             mode,
@@ -104,7 +109,7 @@ public class SgguFallbackComposer {
             "warm-but-firm",
             "비교 기준을 먼저 잡는 게 좋슥니다.",
             "현재 데이터만으로는 두 선택지의 직접 비교 근거가 부족합니다.",
-            knownCandidate + "은 후보로 보이지만, 비교 대상의 비용과 기대 상승폭이 함께 필요합니다.",
+            recommendation,
             "없는 가격이나 시세를 만들어서 결론 내리지는 않겠습니다.",
             "비교하려는 두 선택지와 예산을 알려주세요.",
             displayText

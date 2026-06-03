@@ -74,6 +74,22 @@ class SgguFallbackComposerTest {
     }
 
     @Test
+    void buildsComparisonFallbackWithoutImplyingMissingCandidateExists() {
+        SgguConsultationResponse response = composer.compose(
+            SgguConsultationMode.MAIN_CHAT,
+            SgguConsultationIntent.COMPARISON,
+            "무기 강화랑 보석 중 뭐가 나아요?",
+            contextWithoutCandidate()
+        );
+
+        String responseText = response.displayText() + " " + response.recommendation();
+        assertThat(responseText)
+            .doesNotContain("후보은")
+            .doesNotContain("현재 제공된 후보은 후보로 보이지만")
+            .containsAnyOf("두 선택지", "예산");
+    }
+
+    @Test
     void buildsInvestmentRiskFallbackWithPoliteWarning() {
         SgguConsultationResponse response = composer.compose(
             SgguConsultationMode.MAIN_CHAT,
@@ -100,18 +116,65 @@ class SgguFallbackComposerTest {
 
     @Test
     void fallbackVoiceAvoidsKnownBrokenSgguForms() {
-        SgguConsultationResponse response = composer.compose(
-            SgguConsultationMode.MAIN_CHAT,
-            SgguConsultationIntent.DATA_LIMITED,
-            "상담해주세요",
-            contextWithCandidate()
+        List<SgguConsultationResponse> responses = List.of(
+            composer.compose(
+                SgguConsultationMode.MAIN_CHAT,
+                SgguConsultationIntent.GROWTH_PRIORITY,
+                "뭐부터 올릴까요?",
+                contextWithCandidate()
+            ),
+            composer.compose(
+                SgguConsultationMode.MAIN_CHAT,
+                SgguConsultationIntent.COMPARISON,
+                "무기 강화랑 보석 중 뭐가 나아요?",
+                contextWithCandidate()
+            ),
+            composer.compose(
+                SgguConsultationMode.MAIN_CHAT,
+                SgguConsultationIntent.INVESTMENT_RISK,
+                "이 악세 지금 사도 될까요?",
+                contextWithCandidate()
+            ),
+            composer.compose(
+                SgguConsultationMode.MAIN_CHAT,
+                SgguConsultationIntent.DATA_LIMITED,
+                "상담해주세요",
+                contextWithCandidate()
+            ),
+            composer.compose(
+                SgguConsultationMode.MAIN_CHAT,
+                SgguConsultationIntent.OFF_TOPIC,
+                "오늘 점심 뭐 먹을까요?",
+                contextWithCandidate()
+            )
         );
 
-        assertThat(response.displayText())
-            .doesNotContain("확인했슥습니다")
-            .doesNotContain("좋슥다")
-            .doesNotContain("무섭슥다")
-            .doesNotContain("하슥다");
+        assertThat(responses)
+            .extracting(this::allResponseText)
+            .allSatisfy(text -> assertThat(text)
+                .doesNotContain("확인했슥습니다")
+                .doesNotContain("좋슥다")
+                .doesNotContain("무섭슥다")
+                .doesNotContain("하슥다"));
+    }
+
+    private String allResponseText(SgguConsultationResponse response) {
+        return String.join(" ",
+            response.mood(),
+            response.empathy(),
+            response.diagnosis(),
+            response.recommendation(),
+            response.caution(),
+            response.nextAction(),
+            response.displayText()
+        );
+    }
+
+    private JsonNode contextWithoutCandidate() {
+        return toJsonNode(orderedMap(
+            "profile", orderedMap("characterName", "붐버", "className", "스카우터"),
+            "topSpecUps", List.of()
+        ));
     }
 
     private JsonNode contextWithCandidate() {
