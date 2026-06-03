@@ -122,6 +122,24 @@ class SgguPromptBuilderTest {
     }
 
     @Test
+    void stronglyRequiresPureJsonObjectOutput() {
+        var messages = builder.build(
+            SgguConsultationMode.MAIN_CHAT,
+            SgguConsultationIntent.GROWTH_PRIORITY,
+            "지금 뭐부터 올릴까요?",
+            List.of(),
+            toJsonNode(Map.of("profile", Map.of("characterName", "붐버")))
+        );
+
+        assertThat(messages.get(0).get("content"))
+            .contains("첫 글자는 {")
+            .contains("마지막 글자는 }")
+            .contains("Mood: 같은 라벨 문장 금지")
+            .contains("\"Mood\":\"warm-but-firm\"")
+            .contains("모든 필드 값은 문자열");
+    }
+
+    @Test
     void legacyBuildDelegatesToMainChatMode() {
         var messages = builder.build(
             "뭐부터 올릴까?",
