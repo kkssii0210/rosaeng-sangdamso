@@ -125,6 +125,12 @@ class SgguFallbackComposerTest {
             ),
             composer.compose(
                 SgguConsultationMode.MAIN_CHAT,
+                SgguConsultationIntent.CHARACTER_REVIEW,
+                "제 캐릭터 봐주세요",
+                contextWithCandidate()
+            ),
+            composer.compose(
+                SgguConsultationMode.MAIN_CHAT,
                 SgguConsultationIntent.COMPARISON,
                 "무기 강화랑 보석 중 뭐가 나아요?",
                 contextWithCandidate()
