@@ -158,7 +158,7 @@ class ConsultantControllerTest {
         private tools.jackson.databind.JsonNode context;
 
         FakeSgguConsultationService() {
-            super(null, null, null, null);
+            super(null, null, null, null, null);
         }
 
         @Override

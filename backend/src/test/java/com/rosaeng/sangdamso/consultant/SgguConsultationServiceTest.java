@@ -24,7 +24,8 @@ class SgguConsultationServiceTest {
             new SgguPromptBuilder(),
             localLlmClient,
             new SgguResponseParser(new ObjectMapper()),
-            new SgguFallbackComposer()
+            new SgguFallbackComposer(),
+            new SgguIntentClassifier()
         );
     }
 
@@ -51,6 +52,43 @@ class SgguConsultationServiceTest {
         assertThat(response.displayText()).contains("보석부터");
         assertThat(localLlmClient.messages)
             .anySatisfy(entry -> assertThat(entry.get("content")).contains("Mode: main-chat"));
+    }
+
+    @Test
+    void includesClassifiedIntentInPrompt() {
+        localLlmClient.text = """
+            {
+              "Mood": "warm-but-firm",
+              "Diagnosis": "비교 기준을 봐야 해.",
+              "Recommendation": "무기와 보석을 비용 대비로 비교하자.",
+              "NextAction": "비교 예산을 확인해줘.",
+              "DisplayText": "무기와 보석은 예산 기준으로 비교하겠슥니다."
+            }
+            """;
+
+        service.consult(
+            SgguConsultationMode.MAIN_CHAT,
+            "무기 강화랑 보석 중 뭐가 나아요?",
+            List.of(),
+            context()
+        );
+
+        assertThat(localLlmClient.messages.getLast().get("content")).contains("Intent: comparison");
+    }
+
+    @Test
+    void usesClassifiedIntentWhenLlmFallbackRuns() {
+        localLlmClient.exception = new LocalLlmClient.LocalLlmException("LOCAL_LLM_UNAVAILABLE", "down");
+
+        SgguConsultationResponse response = service.consult(
+            SgguConsultationMode.MAIN_CHAT,
+            "무기 강화랑 보석 중 뭐가 나아요?",
+            List.of(),
+            context()
+        );
+
+        assertThat(response.source()).isEqualTo("fallback");
+        assertThat(response.displayText()).contains("비교", "예산");
     }
 
     @Test

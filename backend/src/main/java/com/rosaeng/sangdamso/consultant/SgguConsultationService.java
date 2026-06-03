@@ -33,18 +33,21 @@ public class SgguConsultationService {
     private final LocalLlmClient localLlmClient;
     private final SgguResponseParser responseParser;
     private final SgguFallbackComposer fallbackComposer;
+    private final SgguIntentClassifier intentClassifier;
     private final Map<String, CachedConsultation> cache = new ConcurrentHashMap<>();
 
     public SgguConsultationService(
         SgguPromptBuilder promptBuilder,
         LocalLlmClient localLlmClient,
         SgguResponseParser responseParser,
-        SgguFallbackComposer fallbackComposer
+        SgguFallbackComposer fallbackComposer,
+        SgguIntentClassifier intentClassifier
     ) {
         this.promptBuilder = promptBuilder;
         this.localLlmClient = localLlmClient;
         this.responseParser = responseParser;
         this.fallbackComposer = fallbackComposer;
+        this.intentClassifier = intentClassifier;
     }
 
     public SgguConsultationResponse consult(
@@ -54,6 +57,7 @@ public class SgguConsultationService {
         JsonNode context
     ) {
         SgguConsultationMode safeMode = mode == null ? SgguConsultationMode.MAIN_CHAT : mode;
+        SgguConsultationIntent intent = intentClassifier.classify(message, conversation);
         String cacheKey = cacheKey(safeMode, message, conversation, context);
         long now = Instant.now().toEpochMilli();
         CachedConsultation cached = cache.get(cacheKey);
@@ -63,19 +67,19 @@ public class SgguConsultationService {
         }
 
         try {
-            List<Map<String, String>> messages = promptBuilder.build(safeMode, message, conversation, context);
+            List<Map<String, String>> messages = promptBuilder.build(safeMode, intent, message, conversation, context);
             LocalLlmClient.Completion completion = localLlmClient.createChatCompletion(messages);
             SgguConsultationResponse response = responseParser.parse(safeMode, completion.text());
 
             if (!isGrounded(safeMode, context, response)) {
-                return fallbackComposer.compose(safeMode, message, context);
+                return fallbackComposer.compose(safeMode, intent, message, context);
             }
 
             cleanupCache(now);
             cache.put(cacheKey, new CachedConsultation(response, now + CACHE_TTL_MS));
             return response;
         } catch (LocalLlmClient.LocalLlmException | SgguResponseParser.InvalidSgguResponseException exception) {
-            return fallbackComposer.compose(safeMode, message, context);
+            return fallbackComposer.compose(safeMode, intent, message, context);
         }
     }
 
