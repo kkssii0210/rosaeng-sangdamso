@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import AppNavigation from "../components/AppNavigation.jsx";
-import ArmoryView from "../components/ArmoryView.jsx";
-import SgguConsultantChat from "../components/SgguConsultantChat.jsx";
-import WelcomeScene from "../components/WelcomeScene.jsx";
+import ClassroomIntro from "../components/classroom/ClassroomIntro.jsx";
+import ClassroomShell from "../components/classroom/ClassroomShell.jsx";
 import { resolveAnalysisCharacterName } from "../lib/ui/efficiencyNavigation.js";
-import { pickSgguThinkingMessage } from "../lib/ui/sgguThinkingMessages.js";
+import {
+  nextClassroomTheme,
+  readStoredClassroomTheme,
+  writeStoredClassroomTheme
+} from "../lib/ui/classroomTheme.js";
 import {
   appendAssistantMessage,
   appendErrorMessage,
@@ -38,11 +39,14 @@ export default function Home() {
   const [isConsulting, setIsConsulting] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
   const [isCheckingRoute, setIsCheckingRoute] = useState(true);
-  const [sgguThoughtMessage] = useState(() => pickSgguThinkingMessage());
+  const [lookupErrorCode, setLookupErrorCode] = useState("");
+  const [classroomTheme, setClassroomTheme] = useState("light");
   const autoLoadStartedRef = useRef(false);
   const consultInFlightRef = useRef(false);
+  const inputRef = useRef(null);
 
   const loadCharacter = useCallback(async (characterName) => {
+    setLookupErrorCode("");
     setIsLoading(true);
     setArmory(null);
     setSpecUpRecommendation(null);
@@ -53,7 +57,9 @@ export default function Home() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(getApiErrorMessage(data));
+        const error = new Error(getApiErrorMessage(data));
+        error.code = data?.code || "";
+        throw error;
       }
 
       setArmory(data);
@@ -74,6 +80,7 @@ export default function Home() {
       const message = caughtError instanceof Error ? caughtError.message : "캐릭터 정보를 불러오지 못했어.";
       setArmory(null);
       setSpecUpRecommendation(null);
+      setLookupErrorCode(caughtError instanceof Error ? caughtError.code || "" : "");
       setMessages([{ role: "error", text: message }]);
     } finally {
       setIsLoading(false);
@@ -95,6 +102,12 @@ export default function Home() {
     setIsCheckingRoute(false);
     loadCharacter(queryCharacterName);
   }, [loadCharacter]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setClassroomTheme(readStoredClassroomTheme(window.localStorage));
+    }
+  }, []);
 
   const askSggu = useCallback(async (question) => {
     if (!armory || consultInFlightRef.current) {
@@ -143,6 +156,18 @@ export default function Home() {
     }
   }, [armory, messages, specUpRecommendation]);
 
+  const toggleClassroomTheme = useCallback(() => {
+    setClassroomTheme((currentTheme) => {
+      const nextTheme = nextClassroomTheme(currentTheme);
+
+      if (typeof window !== "undefined") {
+        writeStoredClassroomTheme(window.localStorage, nextTheme);
+      }
+
+      return nextTheme;
+    });
+  }, []);
+
   function handleSubmit(event) {
     event.preventDefault();
 
@@ -164,48 +189,24 @@ export default function Home() {
     return null;
   }
 
-  const sgguIsThinking = isLoading || isConsulting;
-
   if (!hasEntered && !armory) {
-    return <WelcomeScene onComplete={() => setHasEntered(true)} />;
+    return <ClassroomIntro onComplete={() => setHasEntered(true)} />;
   }
 
   return (
-    <main className={`home ${armory ? "armory-home" : ""}`}>
-      <AppNavigation />
-      <section className={`consult-stage ${armory ? "armory-mode" : "intro-mode"}`} aria-label="슥구 성장 상담">
-        <div className="advisor-rail">
-          <SgguConsultantChat
-            messages={messages}
-            input={input}
-            onInputChange={setInput}
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-            isConsulting={isConsulting}
-            hasArmory={Boolean(armory)}
-          />
-
-          <div className="sggu-wrap">
-            {sgguIsThinking ? (
-              <div className="sggu-thought-bubble" aria-hidden="true">{sgguThoughtMessage}</div>
-            ) : null}
-            <Image
-              src={sgguIsThinking ? "/sggu-thinking-closed-eyes.png" : "/sggu-cutout.png"}
-              alt="검은 정장을 입은 슥구 캐릭터"
-              width={1024}
-              height={1536}
-              className={`sggu-character${sgguIsThinking ? " thinking" : ""}`}
-              priority
-            />
-            <div className="sggu-name" aria-hidden="true">
-              슥구
-            </div>
-            <div className="ground-shadow" aria-hidden="true" />
-          </div>
-        </div>
-
-        {armory ? <ArmoryView armory={armory} /> : null}
-      </section>
-    </main>
+    <ClassroomShell
+      theme={classroomTheme}
+      onToggleTheme={toggleClassroomTheme}
+      messages={messages}
+      input={input}
+      onInputChange={setInput}
+      onSubmit={handleSubmit}
+      isLoading={isLoading}
+      isConsulting={isConsulting}
+      armory={armory}
+      specUpRecommendation={specUpRecommendation}
+      lookupErrorCode={lookupErrorCode}
+      inputRef={inputRef}
+    />
   );
 }
