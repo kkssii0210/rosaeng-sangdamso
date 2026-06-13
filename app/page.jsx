@@ -104,9 +104,15 @@ export default function Home() {
   }, [loadCharacter]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setClassroomTheme(readStoredClassroomTheme(window.localStorage));
+    if (typeof window === "undefined") {
+      return undefined;
     }
+
+    const frame = window.requestAnimationFrame(() => {
+      setClassroomTheme(readStoredClassroomTheme(window.localStorage));
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const askSggu = useCallback(async (question) => {
