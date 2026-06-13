@@ -58,6 +58,97 @@ test("builds completed chalkboard copy from a top candidate", () => {
   assert.equal(state.caution, "경매장 최저가 기준");
 });
 
+test("uses gem candidate type for completed chalkboard title", () => {
+  const state = buildTodayChalkboardState({
+    status: "ready",
+    specUpRecommendation: {
+      Recommendation: {
+        TopCandidates: [
+          {
+            Type: "gem",
+            Label: "라이징 스피어 7->8",
+            NetCostGold: 45000,
+            GainPercent: 0.72
+          }
+        ]
+      }
+    }
+  });
+
+  assert.equal(state.title, "오늘은 보석부터 보는 게 좋겠습니다.");
+  assert.deepEqual(state.notes.map((note) => note.value), [
+    "라이징 스피어 7->8",
+    "45,000골드",
+    "+0.72%"
+  ]);
+});
+
+test("uses accessory candidate type for completed chalkboard title", () => {
+  const state = buildTodayChalkboardState({
+    status: "ready",
+    specUpRecommendation: {
+      Recommendation: {
+        TopCandidates: [
+          {
+            Type: "accessory",
+            Label: "고대 장신구 후보",
+            NetCostGold: 120000,
+            GainPercent: 1.01
+          }
+        ]
+      }
+    }
+  });
+
+  assert.equal(state.title, "악세 교체를 먼저 비교해봅시다.");
+});
+
+test("uses honing candidate type for completed chalkboard title", () => {
+  const state = buildTodayChalkboardState({
+    status: "ready",
+    specUpRecommendation: {
+      Recommendation: {
+        TopCandidates: [
+          {
+            Type: "weaponHoning",
+            Label: "상급 재련 11->12",
+            NetCostGold: 250000,
+            GainPercent: 0.46
+          }
+        ]
+      }
+    }
+  });
+
+  assert.equal(state.title, "강화 효율을 먼저 확인합시다.");
+});
+
+test("builds idle chalkboard copy from null input", () => {
+  const state = buildTodayChalkboardState(null);
+
+  assert.equal(state.variant, "idle");
+  assert.equal(state.primaryActionLabel, "강의 시작");
+});
+
+test("uses direct top candidates when recommendation is already unwrapped", () => {
+  const state = buildTodayChalkboardState({
+    status: "ready",
+    specUpRecommendation: {
+      TopCandidates: [
+        {
+          Type: "gem",
+          Label: "스킬 후보 7->8",
+          NetCostGold: 33000,
+          GainPercent: 0.64
+        }
+      ]
+    }
+  });
+
+  assert.equal(state.title, "오늘은 보석부터 보는 게 좋겠습니다.");
+  assert.equal(state.notes[0].value, "스킬 후보 7->8");
+});
+
 test("uses fallback completed copy without candidates", () => {
   const state = buildTodayChalkboardState({
     status: "ready",
