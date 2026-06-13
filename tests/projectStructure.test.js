@@ -49,17 +49,19 @@ test("backend ownership document defines JS domain modules as reference models",
   assert.match(ownershipDoc, /reference and parity-test models/);
 });
 
-test("browser UI does not import Lostark or spec reference modules directly", () => {
-  const uiFiles = [
+test("production frontend modules do not import Lostark API or spec reference modules directly", () => {
+  const productionFiles = [
     ...listFiles("app"),
-    ...listFiles("components")
+    ...listFiles("components"),
+    ...listFiles("lib/ui"),
+    ...listFiles("lib/lostark")
   ].filter((file) => /\.(?:js|jsx|mjs)$/.test(file));
 
-  for (const file of uiFiles) {
+  for (const file of productionFiles) {
     const source = readText(file);
 
+    assert.doesNotMatch(source, /from\s+["'][^"']*(?:lib\/spec|\.\.\/spec|\.\.\/lib\/spec|\.\.\/\.\.\/lib\/spec)/, file);
     assert.doesNotMatch(source, /from\s+["'][^"']*(?:lib\/lostark|\.\.\/lib\/lostark|\.\.\/\.\.\/lib\/lostark)/, file);
-    assert.doesNotMatch(source, /from\s+["'][^"']*(?:lib\/spec|\.\.\/lib\/spec|\.\.\/\.\.\/lib\/spec)/, file);
   }
 });
 

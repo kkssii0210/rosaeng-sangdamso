@@ -1,0 +1,45 @@
+{
+  "name": "main-stats",
+  "source": "lib/spec/mainStats.js::buildMainStatSummary",
+  "input": {
+    "equipment": [
+      {
+        "Type": "무기",
+        "Name": "종말의 대검",
+        "MainStatValue": 12345
+      },
+      {
+        "Type": "상의",
+        "Name": "엄숙한 정장",
+        "MainStatValue": "6000"
+      },
+      {
+        "Type": "나침반",
+        "Name": "전투 제외 장비",
+        "MainStatValue": 0
+      },
+      {
+        "Type": "부적",
+        "Name": "깨진 값",
+        "MainStatValue": "not-a-number"
+      }
+    ]
+  },
+  "expected": {
+    "Items": [
+      {
+        "Index": 0,
+        "Type": "무기",
+        "Name": "종말의 대검",
+        "Value": 12345
+      },
+      {
+        "Index": 1,
+        "Type": "상의",
+        "Name": "엄숙한 정장",
+        "Value": 6000
+      }
+    ],
+    "MainStatTotal": 18345
+  }
+}

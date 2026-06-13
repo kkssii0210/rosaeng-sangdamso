@@ -1,0 +1,40 @@
+{
+  "name": "damage-model",
+  "source": "lib/spec/damageModel.js",
+  "input": {
+    "percent": 12.5,
+    "ratio": 0.375,
+    "roundSource": 12.345,
+    "criticalStats": {
+      "CriticalRateLimit": {
+        "IsActive": true,
+        "SourceName": "뭉툭한 가시",
+        "CapPercent": 80,
+        "OverflowConversionRatePercent": 25,
+        "MaxConvertedEvolutionDamagePercent": 5
+      }
+    },
+    "currentCritRatePercent": 120,
+    "baseCritRatePercent": 50,
+    "fixedEvolutionDamagePercent": 18,
+    "critDamageBonusPercent": 65,
+    "criticalOutgoingDamagePercent": 12
+  },
+  "expected": {
+    "toRatio": 0.125,
+    "toPercent": 37.5,
+    "roundPercent": 12.35,
+    "criticalRateLimit": {
+      "isActive": true,
+      "sourceName": "뭉툭한 가시",
+      "capPercent": 80,
+      "overflowConversionRatePercent": 25,
+      "maxConvertedEvolutionDamagePercent": 5
+    },
+    "effectiveCriticalRatePercent": 80,
+    "convertedEvolutionDamagePercent": 5,
+    "totalEvolutionDamagePercent": 23,
+    "evolutionDamageMultiplier": 1.0423728813559323,
+    "criticalAverageMultiplier": 2.5744
+  }
+}

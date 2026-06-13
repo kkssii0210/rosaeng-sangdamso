@@ -1,0 +1,153 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0_inpainting_0.1.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-inpaint-source-white.png"
+    }
+  },
+  "3": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "sggu-pipe-hand-mask-tiny-v4.png",
+      "channel": "red"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-control-lineart.png"
+    }
+  },
+  "5": {
+    "class_type": "ControlNetLoader",
+    "inputs": {
+      "control_net_name": "controlnet-canny-sdxl-1.0-fp16.safetensors"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "tiny localized inpainting only inside the mask, preserve the exact same chibi anime boy and all unmasked pixels, remove the smoking pipe from mouth and hand, close the small mouth with a clean stern anime mouth line, redraw fingers naturally holding a tiny slim black laser pointer remote like a short pen, a very thin cyan laser beam starts from the tiny pointer and points upper left, seamless matching line art and shading, no smoke generated, no large object"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "smoking pipe, pipe bowl, tobacco pipe, smoke, cigar, cigarette, cup, mug, large black object, blob, hole in face, changed eyes, changed hair, changed body, extra fingers, missing fingers, deformed hand, text, watermark"
+    }
+  },
+  "8": {
+    "class_type": "ControlNetApplyAdvanced",
+    "inputs": {
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "control_net": [
+        "5",
+        0
+      ],
+      "image": [
+        "4",
+        0
+      ],
+      "strength": 0.16,
+      "start_percent": 0.0,
+      "end_percent": 0.35
+    }
+  },
+  "9": {
+    "class_type": "InpaintModelConditioning",
+    "inputs": {
+      "positive": [
+        "8",
+        0
+      ],
+      "negative": [
+        "8",
+        1
+      ],
+      "vae": [
+        "1",
+        2
+      ],
+      "pixels": [
+        "2",
+        0
+      ],
+      "mask": [
+        "3",
+        0
+      ],
+      "noise_mask": true
+    }
+  },
+  "10": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "9",
+        1
+      ],
+      "latent_image": [
+        "9",
+        2
+      ],
+      "seed": 22979617798,
+      "steps": 24,
+      "cfg": 5.4,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.62
+    }
+  },
+  "11": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "12": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "filename_prefix": "sggu_tiny_mask_laser_v4_1781182580"
+    }
+  }
+}

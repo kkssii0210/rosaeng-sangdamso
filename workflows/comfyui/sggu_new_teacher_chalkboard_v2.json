@@ -1,0 +1,125 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "animagine-xl-4.0-opt.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-cutout.png"
+    }
+  },
+  "3": {
+    "class_type": "IPAdapterUnifiedLoader",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "preset": "PLUS (high strength)"
+    }
+  },
+  "4": {
+    "class_type": "IPAdapterAdvanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "ipadapter": [
+        "3",
+        1
+      ],
+      "image": [
+        "2",
+        0
+      ],
+      "weight": 0.82,
+      "weight_type": "style and composition",
+      "combine_embeds": "concat",
+      "start_at": 0.0,
+      "end_at": 0.72,
+      "embeds_scaling": "V only"
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "masterpiece, best quality, polished chibi anime mascot character, full body standing teacher pose, same Sggu mascot identity: black spiky side parted hair, thick sharp black eyebrows, bright cyan blue eyes, pale skin, small serious confident mouth, black formal suit uniform, white shirt, black tie, silver chain detail on jacket, cute authoritative teacher. In front of a green classroom chalkboard, one arm naturally extended, holding a normal slim classroom pointer stick or small laser pointer, pointing at the chalkboard while explaining, lecture pose, clean hand anatomy, UI mascot asset, simple white background, clean line art, high detail, consistent character design"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "low quality, worst quality, bad anatomy, bad hands, extra fingers, missing fingers, pipe, smoking pipe, smoke, cigarette, cigar, cup, mug, weapon, gun, sci fi blaster, face covered, different hair color, brown hair, closed eyes, beard, moustache, old man, realistic, text, watermark, logo, blurry, deformed, extra limbs"
+    }
+  },
+  "7": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 768,
+      "height": 1152,
+      "batch_size": 1
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "5",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "latent_image": [
+        "7",
+        0
+      ],
+      "seed": 2026061102,
+      "steps": 32,
+      "cfg": 6.2,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "9",
+        0
+      ],
+      "filename_prefix": "sggu_new_teacher_chalkboard_v2"
+    }
+  }
+}

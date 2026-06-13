@@ -76,14 +76,14 @@ public class CriticalStatsService {
         double fixedEvolutionDamage = roundPercent(sumSources(specialSources, EVOLUTION_DAMAGE_KIND, "global"));
         double globalAdditionalDamage = roundPercent(sumSources(specialSources, ADDITIONAL_DAMAGE_KIND, "global"));
         Map<String, Object> criticalRateLimit = criticalRateLimitOf(specialSources);
-        double capPercent = ((Number) criticalRateLimit.get("CapPercent")).doubleValue();
+        DamageModel.CriticalRateLimit criticalRateLimitModel = criticalRateLimitModel(criticalRateLimit);
         double convertedEvolutionDamage = convertedEvolutionDamagePercent(totalCritRate, criticalRateLimit);
 
         return toJsonNode(orderedMap(
             "BaseCriticalDamagePercent", 200,
             "GlobalCriticalRatePercent", globalCritRate,
             "ConditionalCriticalRatePercent", conditionalCritRate,
-            "EffectiveCriticalRatePercent", Math.min(totalCritRate, capPercent),
+            "EffectiveCriticalRatePercent", DamageModel.effectiveCriticalRatePercent(totalCritRate, criticalRateLimitModel),
             "GlobalAttackPowerPercent", roundPercent(sumSources(specialSources, ATTACK_POWER_KIND, "global")),
             "ConditionalAttackPowerPercent", roundPercent(sumSources(specialSources, ATTACK_POWER_KIND, "conditional")),
             "GlobalWeaponPowerPercent", roundPercent(sumSources(specialSources, WEAPON_POWER_KIND, "global")),
@@ -678,17 +678,20 @@ public class CriticalStatsService {
     }
 
     private double convertedEvolutionDamagePercent(double criticalRatePercent, Map<String, Object> criticalRateLimit) {
-        if (!Boolean.TRUE.equals(criticalRateLimit.get("IsActive"))) {
-            return 0;
-        }
+        return roundPercent(DamageModel.convertedEvolutionDamagePercent(
+            criticalRatePercent,
+            criticalRateLimitModel(criticalRateLimit)
+        ));
+    }
 
-        double capPercent = number(criticalRateLimit.get("CapPercent"));
-        double conversionRatePercent = number(criticalRateLimit.get("OverflowConversionRatePercent"));
-        double maxConvertedEvolutionDamagePercent = number(criticalRateLimit.get("MaxConvertedEvolutionDamagePercent"));
-        double overflowPercent = Math.max(0, criticalRatePercent - capPercent);
-        double convertedPercent = overflowPercent * conversionRatePercent / 100;
-
-        return roundPercent(Math.min(convertedPercent, maxConvertedEvolutionDamagePercent));
+    private DamageModel.CriticalRateLimit criticalRateLimitModel(Map<String, Object> criticalRateLimit) {
+        return new DamageModel.CriticalRateLimit(
+            Boolean.TRUE.equals(criticalRateLimit.get("IsActive")),
+            String.valueOf(criticalRateLimit.getOrDefault("SourceName", "")),
+            number(criticalRateLimit.getOrDefault("CapPercent", 100)),
+            number(criticalRateLimit.getOrDefault("OverflowConversionRatePercent", 0)),
+            number(criticalRateLimit.getOrDefault("MaxConvertedEvolutionDamagePercent", 0))
+        );
     }
 
     private List<Map<String, Object>> filterByScope(List<Map<String, Object>> sources, String scope) {
@@ -843,7 +846,7 @@ public class CriticalStatsService {
     }
 
     private double roundPercent(double value) {
-        return Math.round((value + 1e-12) * 100) / 100.0;
+        return DamageModel.roundPercent(value);
     }
 
     private double number(Object value) {

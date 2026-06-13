@@ -453,6 +453,41 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - PostgreSQL을 붙일 때는 캐릭터 스냅샷, 추천 실행 기록, 상담 세션을 먼저 저장 대상으로 잡고, 조회 히스토리와 RAG 문서 저장소는 후순위로 둔다.
 - 포트폴리오 문서에는 Spring Boot가 실제로 담당하는 API 소유권과 목표 확장 영역을 더 짧은 발표용 문장으로 정리할 수 있다.
 
+## 2026-06-13
+
+### 목표
+
+- 프론트에 남은 전투력/효율 계산 의존성을 Spring Boot BFF 응답 중심으로 정리한다.
+- Java 계산 서비스가 기존 JS 계산 결과와 어긋나지 않도록 golden fixture 기반 회귀 검증을 만든다.
+- 슥구 캐릭터 제작 기준과 생각중 상태 UI를 정리해 이후 이미지 생성 작업의 기준을 남긴다.
+
+### 변경
+
+- `docs/spring-calculation-migration.md`에 Spring 계산 이관 진행표, API 계약, 프론트 계산 import 금지 원칙, 검증 명령을 정리했다.
+- `scripts/export-calculation-golden-fixtures.mjs`와 `backend/src/test/resources/golden/*.json` fixture를 추가해 JS 계산 결과를 Java parity 테스트의 기준값으로 남겼다.
+- Spring Boot에 `DamageModel`, `AccessoryContributionService`, `EngravingContributionService`를 추가하고 치명타, 진화형 피해, 악세사리/각인 기여도 계산을 공통 모델로 맞췄다.
+- `CharacterResponse`가 `mainStats`, `avatarStats`, `accessoryContributions`, `engravingContributions`를 내려주도록 확장하고, 장비/아바타/각인 UI가 프론트 계산 wrapper 대신 backend 응답을 사용하게 바꿨다.
+- 오래된 프론트 계산 wrapper인 `lib/ui/accessoryContributions.js`, `lib/ui/avatarStats.js`, `lib/ui/engravingContributions.js`, `lib/ui/mainStats.js`와 `lib/lostark/characterEfficiencyContext.js`를 제거했다.
+- `tests/projectStructure.test.js`가 `app`, `components`, `lib/ui`, `lib/lostark`의 production import에서 `lib/spec`/`lib/lostark` 직접 의존을 막도록 범위를 넓혔다.
+- 메인 화면과 효율 페이지의 로딩/상담 대기 상태에서 생각중 슥구 이미지와 말풍선을 보여주도록 UI를 보강했다.
+- `lib/ui/sgguThinkingMessages.js`와 테스트를 추가해 생각중 말풍선 문구를 고정했다.
+- `docs/sggu-character-guide.md`, `docs/sggu-prompt-rules.md`, `docs/sggu-blink-preview.html`, sketch/workflow 자료를 추가해 슥구 캐릭터 정체성과 이미지 생성/눈깜빡임 실험 기준을 문서화했다.
+- 앱에서 쓰는 생각중 슥구 이미지는 Git에 올라갈 수 있도록 `public/sggu-thinking-closed-eyes.png`로 배치하고, 생성 후보가 쌓이는 `.codex/`, `.hermes/`, `public/generated/`는 로컬 작업 산출물로 유지한다.
+
+### 검증
+
+- `npm test`
+- `npm run lint`
+- `npm run build`
+- `cd backend && ./mvnw test`
+- `git diff --check`
+
+### 다음 작업
+
+- Spring 응답 계약이 넓어진 만큼 실제 Lostark API 캐릭터 조회 smoke test로 `mainStats`, `avatarStats`, 악세/각인 기여도 필드가 UI에서 정상 표시되는지 확인한다.
+- `lib/spec/*`는 reference/parity-test 용도만 남기고, runtime bundle에 들어가지 않는 구조를 계속 좁힌다.
+- 슥구 blink preview는 아직 앱에 연결하지 않은 실험 자료이므로, 적용 전에는 기존 컷아웃 정체성과 모바일 표시 상태를 다시 검수한다.
+
 ## 앞으로의 기록 방식
 
 매일 작업을 마칠 때 아래 항목을 추가한다.

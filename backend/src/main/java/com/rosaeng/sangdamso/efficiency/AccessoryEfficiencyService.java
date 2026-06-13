@@ -44,10 +44,11 @@ public class AccessoryEfficiencyService {
                 "MissingInputs", List.of("현재 전투력 계산값")
             ));
         }
+        double roundedCurrentEstimate = roundEstimate(currentEstimate);
 
         List<Map<String, Object>> comparisons = arrayItems(candidates).stream()
             .filter(candidate -> ACCESSORY_TYPES.contains(textValue(candidate, "Type", "type")))
-            .map(candidate -> bestReplacementForCandidate(context, candidate, currentOfficial, currentEstimate))
+            .map(candidate -> bestReplacementForCandidate(context, candidate, currentOfficial, roundedCurrentEstimate))
             .filter(Objects::nonNull)
             .sorted(Comparator.comparingDouble(item -> ((Number) item.get("GoldPerOnePercentCombatPower")).doubleValue()))
             .limit(3)
@@ -106,11 +107,11 @@ public class AccessoryEfficiencyService {
             context.get("gems")
         );
 
-        if (simulatedEstimate == null || simulatedEstimate <= currentEstimate) {
+        if (simulatedEstimate == null || roundEstimate(simulatedEstimate) <= currentEstimate) {
             return null;
         }
 
-        double combatPowerGain = simulatedEstimate - currentEstimate;
+        double combatPowerGain = roundEstimate(simulatedEstimate) - currentEstimate;
         double combatPowerGainPercent = (combatPowerGain / currentOfficial) * 100;
 
         if (combatPowerGain <= 0 || combatPowerGainPercent <= 0) {
@@ -155,6 +156,10 @@ public class AccessoryEfficiencyService {
         return slots;
     }
 
+    private double roundEstimate(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
     private JsonNode replaceAccessoryAtIndex(JsonNode equipment, int index, JsonNode candidate) {
         List<Object> items = new ArrayList<>();
         List<JsonNode> equipmentItems = arrayItems(equipment);
@@ -182,24 +187,24 @@ public class AccessoryEfficiencyService {
         }
 
         Map<String, Object> profileMap = objectMap(profile);
-        List<Map<String, Object>> stats = arrayItems(child(profile, "Stats")).stream()
-            .map(this::objectMap)
-            .toList();
-        List<Map<String, Object>> updatedStats = new ArrayList<>(stats);
+        List<Map<String, Object>> updatedStats = new ArrayList<>();
+
+        for (JsonNode statNode : arrayItems(child(profile, "Stats"))) {
+            Map<String, Object> stat = objectMap(statNode);
+            String statType = textValue(statNode, "Type", "type");
+            Integer delta = deltas.get(statType);
+
+            if (delta != null) {
+                double currentValue = numberValue(statNode, "Value", "value") == null ? 0 : numberValue(statNode, "Value", "value");
+                stat.put("Value", String.valueOf(Math.max(0, currentValue + delta)));
+            }
+
+            updatedStats.add(stat);
+        }
 
         for (Map.Entry<String, Integer> delta : deltas.entrySet()) {
-            boolean found = false;
-
-            for (Map<String, Object> stat : updatedStats) {
-                if (!delta.getKey().equals(String.valueOf(stat.get("Type")))) {
-                    continue;
-                }
-
-                double currentValue = number(stat.get("Value"));
-                stat.put("Value", String.valueOf(Math.max(0, currentValue + delta.getValue())));
-                found = true;
-                break;
-            }
+            boolean found = updatedStats.stream()
+                .anyMatch(stat -> delta.getKey().equals(String.valueOf(stat.get("Type")).replace("\"", "")));
 
             if (!found && delta.getValue() > 0) {
                 updatedStats.add(new LinkedHashMap<>(orderedMap("Type", delta.getKey(), "Value", String.valueOf(delta.getValue()))));
@@ -241,6 +246,48 @@ public class AccessoryEfficiencyService {
         }
 
         return lines;
+    }
+
+    private JsonNode arkPassiveWithAccessoryDelta(JsonNode arkPassive, JsonNode replacedAccessory, JsonNode candidate) {
+        double currentPoint = accessoryEnlightenmentPoint(replacedAccessory);
+        double candidatePoint = accessoryEnlightenmentPoint(candidate);
+        double delta = candidatePoint - currentPoint;
+
+        if (delta == 0 || arkPassive == null || arkPassive.isNull()) {
+            return arkPassive;
+        }
+
+        JsonNode pointsNode = value(arkPassive, "Points", "points");
+        String pointKey = child(arkPassive, "Points") != null && !child(arkPassive, "Points").isNull() ? "Points" : "points";
+        List<Object> points = new ArrayList<>();
+        boolean updated = false;
+
+        for (JsonNode point : arrayItems(pointsNode)) {
+            if (!"깨달음".equals(textValue(point, "Name", "name"))) {
+                points.add(point);
+                continue;
+            }
+
+            Map<String, Object> pointMap = objectMap(point);
+            String valueKey = child(point, "Value") != null && !child(point, "Value").isNull() ? "Value" : "value";
+            double currentValue = numberValue(point, "Value", "value") == null ? 0 : numberValue(point, "Value", "value");
+            pointMap.put(valueKey, Math.max(0, currentValue + delta));
+            points.add(pointMap);
+            updated = true;
+        }
+
+        if (!updated) {
+            return arkPassive;
+        }
+
+        Map<String, Object> arkPassiveMap = objectMap(arkPassive);
+        arkPassiveMap.put(pointKey, points);
+        return toJsonNode(arkPassiveMap);
+    }
+
+    private double accessoryEnlightenmentPoint(JsonNode accessory) {
+        Double directPoint = numberValue(accessory, "EnlightenmentPoint", "enlightenmentPoint");
+        return directPoint == null ? 0 : directPoint;
     }
 
     private Map<String, Object> objectMap(JsonNode node) {

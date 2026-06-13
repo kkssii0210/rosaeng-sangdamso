@@ -1,0 +1,109 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "animagine-xl-4.0-opt.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-inpaint-source-white.png"
+    }
+  },
+  "3": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "sggu-pipe-hand-mask.png",
+      "channel": "red"
+    }
+  },
+  "4": {
+    "class_type": "VAEEncodeForInpaint",
+    "inputs": {
+      "pixels": [
+        "2",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ],
+      "mask": [
+        "3",
+        0
+      ],
+      "grow_mask_by": 8
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "masterpiece, high score, clean anime chibi mascot edit, keep the exact same character, same black spiky swept back hair, same cyan eyes, same black suit, remove pipe and smoke, clean lower face with small serious mouth, small chibi hand holding a slim black laser pointer, cyan laser beam pointing upper left, natural hand, no extra object, seamless edit"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "pipe, smoking pipe, smoke, cigar, cigarette, beard, moustache, mask, black blob, hole, deformed face, different character, changed hair, changed eyes, extra fingers, bad hand, text, watermark"
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "5",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "latent_image": [
+        "4",
+        0
+      ],
+      "seed": 2233445566,
+      "steps": 26,
+      "cfg": 5.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.72
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ],
+      "filename_prefix": "sggu_inpaint_laser_attempt"
+    }
+  }
+}

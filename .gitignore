@@ -19,5 +19,7 @@ public/generated/
 !.agents/skills/deep-interview/SKILL.md
 .superpowers/
 .vscode/
+.codex/
+.hermes/
 plugins/
 skills-lock.json

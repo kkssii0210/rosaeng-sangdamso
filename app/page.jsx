@@ -7,6 +7,7 @@ import ArmoryView from "../components/ArmoryView.jsx";
 import SgguConsultantChat from "../components/SgguConsultantChat.jsx";
 import WelcomeScene from "../components/WelcomeScene.jsx";
 import { resolveAnalysisCharacterName } from "../lib/ui/efficiencyNavigation.js";
+import { pickSgguThinkingMessage } from "../lib/ui/sgguThinkingMessages.js";
 import {
   appendAssistantMessage,
   appendErrorMessage,
@@ -37,6 +38,7 @@ export default function Home() {
   const [isConsulting, setIsConsulting] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
   const [isCheckingRoute, setIsCheckingRoute] = useState(true);
+  const [sgguThoughtMessage] = useState(() => pickSgguThinkingMessage());
   const autoLoadStartedRef = useRef(false);
   const consultInFlightRef = useRef(false);
 
@@ -162,6 +164,8 @@ export default function Home() {
     return null;
   }
 
+  const sgguIsThinking = isLoading || isConsulting;
+
   if (!hasEntered && !armory) {
     return <WelcomeScene onComplete={() => setHasEntered(true)} />;
   }
@@ -182,12 +186,15 @@ export default function Home() {
           />
 
           <div className="sggu-wrap">
+            {sgguIsThinking ? (
+              <div className="sggu-thought-bubble" aria-hidden="true">{sgguThoughtMessage}</div>
+            ) : null}
             <Image
-              src="/sggu-cutout.png"
+              src={sgguIsThinking ? "/sggu-thinking-closed-eyes.png" : "/sggu-cutout.png"}
               alt="검은 정장을 입은 슥구 캐릭터"
               width={1024}
               height={1536}
-              className="sggu-character"
+              className={`sggu-character${sgguIsThinking ? " thinking" : ""}`}
               priority
             />
             <div className="sggu-name" aria-hidden="true">

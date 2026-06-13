@@ -1,0 +1,13 @@
+{
+  "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "animagine-xl-4.0-opt.safetensors"}},
+  "2": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": "masterpiece, high score, great score, absurdres, chibi anime mascot, same character identity as reference image, short spiky swept back black hair, central bang, sharp side hair spikes, bright cyan blue eyes, thick straight eyebrows, cute serious expression, black formal teacher suit, white shirt, black tie, full body, standing in front of green classroom blackboard, holding a long wooden pointing stick in one hand, pointing at the blackboard, teaching pose, friendly professional, clean UI asset, plain light background"}},
+  "3": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": "lowres, bad anatomy, bad hands, extra fingers, missing fingers, deformed, text, watermark, logo, signature, cropped, out of frame, blurry, photorealistic, realistic, old man, girl, woman, different character, purple eyes, long hair, pipe, smoke, weapon, floating pointer, pointer crossing face"}},
+  "4": {"class_type": "IPAdapterUnifiedLoader", "inputs": {"model": ["1", 0], "preset": "PLUS (high strength)"}},
+  "5": {"class_type": "LoadImage", "inputs": {"image": "sggu-cutout.png"}},
+  "6": {"class_type": "CLIPVisionLoader", "inputs": {"clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"}},
+  "7": {"class_type": "IPAdapterAdvanced", "inputs": {"model": ["4", 0], "ipadapter": ["4", 1], "image": ["5", 0], "clip_vision": ["6", 0], "weight": 0.82, "weight_type": "style and composition", "combine_embeds": "concat", "start_at": 0.0, "end_at": 0.72, "embeds_scaling": "V only"}},
+  "8": {"class_type": "EmptyLatentImage", "inputs": {"width": 768, "height": 768, "batch_size": 1}},
+  "9": {"class_type": "KSampler", "inputs": {"model": ["7", 0], "positive": ["2", 0], "negative": ["3", 0], "latent_image": ["8", 0], "seed": 1122334455, "steps": 24, "cfg": 6.5, "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0}},
+  "10": {"class_type": "VAEDecode", "inputs": {"samples": ["9", 0], "vae": ["1", 2]}},
+  "11": {"class_type": "SaveImage", "inputs": {"images": ["10", 0], "filename_prefix": "sggu_teacher_ipadapter_smoke"}}
+}

@@ -12,6 +12,7 @@ import {
   resolveEfficiencyAdvisorMessage
 } from "../lib/ui/efficiencyConsultationState.js";
 import { buildAnalysisHref, resolveEfficiencyCharacterName } from "../lib/ui/efficiencyNavigation.js";
+import { pickSgguThinkingMessage } from "../lib/ui/sgguThinkingMessages.js";
 
 function buildFallbackConsultationResponse(errorMessage) {
   return {
@@ -82,6 +83,7 @@ export default function CombatPowerEfficiencyPage() {
   const [isCheckingEntry, setIsCheckingEntry] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
+  const [sgguThoughtMessage] = useState(() => pickSgguThinkingMessage());
   const [error, setError] = useState("");
   const requestInFlightRef = useRef(false);
   const consultationRequestIdRef = useRef(0);
@@ -223,6 +225,8 @@ export default function CombatPowerEfficiencyPage() {
     loadRecommendationByName(characterName);
   }
 
+  const sgguIsThinking = isLoading || consultation.status === "loading";
+
   const advisorMessage = error
     ? "자료를 읽는 중에 막힌 부분이 있어. 캐릭터명과 API 상태를 확인하고 다시 계산해보자."
     : resolveEfficiencyAdvisorMessage({
@@ -248,13 +252,14 @@ export default function CombatPowerEfficiencyPage() {
         />
         <div className="efficiency-hero-content">
           <div className="efficiency-sggu-stage" aria-hidden="true">
+            {sgguIsThinking ? <div className="sggu-thought-bubble efficiency">{sgguThoughtMessage}</div> : null}
             <Image
-              src="/sggu-welcome-canonical.png"
+              src={sgguIsThinking ? "/sggu-thinking-closed-eyes.png" : "/sggu-welcome-canonical.png"}
               alt=""
               width={1024}
               height={1536}
               priority
-              className="efficiency-sggu"
+              className={`efficiency-sggu${sgguIsThinking ? " thinking" : ""}`}
             />
           </div>
 

@@ -2,7 +2,10 @@ package com.rosaeng.sangdamso.efficiency;
 
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.orderedMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Offset.offset;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,35 @@ class AccessoryEfficiencyServiceTest {
         assertThat(result.get("Comparisons").get(0).get("CombatPowerGainPercent").asDouble()).isGreaterThan(0);
     }
 
+    @Test
+    void matchesAccessoryEfficiencyGoldenFixture() throws IOException {
+        AccessoryEfficiencyService service = new AccessoryEfficiencyService();
+        JsonNode fixture = readFixture("golden/accessory-efficiency.json");
+        JsonNode input = fixture.get("input");
+        JsonNode expected = fixture.get("expected");
+        JsonNode combatContext = input.get("combatContext");
+        Map<String, JsonNode> context = new LinkedHashMap<>();
+        context.put("profile", input.get("profile"));
+        context.put("equipment", input.get("equipment"));
+        context.put("arkPassive", combatContext.get("arkPassive"));
+        context.put("engravings", combatContext.get("engravings"));
+        context.put("gems", combatContext.get("gems"));
+        context.put("criticalStats", input.get("criticalStats"));
+
+        JsonNode result = service.build(context, input.get("candidates"));
+
+        assertThat(result.get("Status").asString()).isEqualTo(expected.get("Status").asString());
+        assertThat(result.get("TopRecommendation").get("Type").asString())
+            .isEqualTo(expected.get("TopRecommendation").get("Type").asString());
+        assertThat(result.get("TopRecommendation").get("BuyPrice").asInt())
+            .isEqualTo(expected.get("TopRecommendation").get("BuyPrice").asInt());
+        assertThat(result.get("TopRecommendation").get("ReplacedEquipmentIndex").asInt())
+            .isEqualTo(expected.get("TopRecommendation").get("ReplacedEquipmentIndex").asInt());
+        assertThat(result.get("TopRecommendation").get("CombatPowerGainPercent").asDouble())
+            .isCloseTo(expected.get("TopRecommendation").get("CombatPowerGainPercent").asDouble(), offset(0.000000001));
+        assertThat(result.get("Comparisons").size()).isEqualTo(expected.get("Comparisons").size());
+    }
+
     private Map<String, Object> currentRing() {
         return orderedMap(
             "Type", "반지",
@@ -83,5 +115,12 @@ class AccessoryEfficiencyServiceTest {
 
     private JsonNode toJsonNode(Object value) {
         return objectMapper.convertValue(value, JsonNode.class);
+    }
+
+    private JsonNode readFixture(String fixture) throws IOException {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fixture)) {
+            assertThat(inputStream).as("fixture %s should exist", fixture).isNotNull();
+            return objectMapper.readTree(inputStream);
+        }
     }
 }

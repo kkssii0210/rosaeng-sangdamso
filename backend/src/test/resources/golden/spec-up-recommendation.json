@@ -1,0 +1,150 @@
+{
+  "name": "spec-up-recommendation",
+  "source": "lib/spec/specUpRecommendation.js::buildSpecUpRecommendation",
+  "input": {
+    "accessoryRecommendation": {
+      "Status": "ready",
+      "Comparisons": [
+        {
+          "Type": "accessory",
+          "Candidate": {
+            "Name": "효율 반지",
+            "Type": "반지"
+          },
+          "ReplacedAccessory": {
+            "Name": "현재 반지",
+            "Type": "반지"
+          },
+          "BuyPrice": 100000,
+          "CombatPowerGainPercent": 1
+        }
+      ]
+    },
+    "upgradeEfficiency": {
+      "MarketDataStatus": "ready",
+      "Candidates": [
+        {
+          "Id": "weapon-11-12",
+          "Type": "weaponHoning",
+          "Label": "무기 11->12",
+          "CostGold": 500000,
+          "NetCostGold": 500000,
+          "GainPercent": 1,
+          "GainType": "combatPower",
+          "EfficiencyScore": 0.2,
+          "ScoreUnit": "전투력 % / 10만 골드"
+        },
+        {
+          "Id": "armor-head-11-12",
+          "Type": "armorHoning",
+          "Label": "투구 11->12",
+          "CostGold": 100000,
+          "NetCostGold": 100000,
+          "GainPercent": 0.5,
+          "GainType": "combatPower",
+          "EfficiencyScore": 0.5,
+          "ScoreUnit": "전투력 % / 10만 골드"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "Status": "ready",
+    "TopCandidates": [
+      {
+        "Id": "accessory-0-0",
+        "Type": "accessory",
+        "Label": "반지 교체",
+        "CostGold": 100000,
+        "NetCostGold": 100000,
+        "GainPercent": 1,
+        "GainType": "combatPower",
+        "EfficiencyScore": 1,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Source": "auction",
+        "AccessoryComparison": {
+          "Type": "accessory",
+          "Candidate": {
+            "Name": "효율 반지",
+            "Type": "반지"
+          },
+          "ReplacedAccessory": {
+            "Name": "현재 반지",
+            "Type": "반지"
+          },
+          "BuyPrice": 100000,
+          "CombatPowerGainPercent": 1
+        },
+        "Caveat": "악세 즉시구매가 기준"
+      },
+      {
+        "Id": "armor-head-11-12",
+        "Type": "armorHoning",
+        "Label": "투구 11->12",
+        "CostGold": 100000,
+        "NetCostGold": 100000,
+        "GainPercent": 0.5,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.5,
+        "ScoreUnit": "전투력 % / 10만 골드"
+      },
+      {
+        "Id": "weapon-11-12",
+        "Type": "weaponHoning",
+        "Label": "무기 11->12",
+        "CostGold": 500000,
+        "NetCostGold": 500000,
+        "GainPercent": 1,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.2,
+        "ScoreUnit": "전투력 % / 10만 골드"
+      }
+    ],
+    "AccessoryRecommendation": {
+      "Status": "ready",
+      "Comparisons": [
+        {
+          "Type": "accessory",
+          "Candidate": {
+            "Name": "효율 반지",
+            "Type": "반지"
+          },
+          "ReplacedAccessory": {
+            "Name": "현재 반지",
+            "Type": "반지"
+          },
+          "BuyPrice": 100000,
+          "CombatPowerGainPercent": 1
+        }
+      ]
+    },
+    "UpgradeEfficiency": {
+      "MarketDataStatus": "ready",
+      "Candidates": [
+        {
+          "Id": "weapon-11-12",
+          "Type": "weaponHoning",
+          "Label": "무기 11->12",
+          "CostGold": 500000,
+          "NetCostGold": 500000,
+          "GainPercent": 1,
+          "GainType": "combatPower",
+          "EfficiencyScore": 0.2,
+          "ScoreUnit": "전투력 % / 10만 골드"
+        },
+        {
+          "Id": "armor-head-11-12",
+          "Type": "armorHoning",
+          "Label": "투구 11->12",
+          "CostGold": 100000,
+          "NetCostGold": 100000,
+          "GainPercent": 0.5,
+          "GainType": "combatPower",
+          "EfficiencyScore": 0.5,
+          "ScoreUnit": "전투력 % / 10만 골드"
+        }
+      ]
+    },
+    "MissingInputs": []
+  }
+}

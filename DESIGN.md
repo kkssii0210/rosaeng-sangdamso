@@ -126,6 +126,9 @@ components:
 - **Card:** 내용을 안정적으로 묶는 기본 컨테이너다.
 - **Input:** 읽기 쉽고 충분한 내부 여백을 가져야 하며, 상태 변화는 색상과 경계선으로 분명히 전달한다.
 
+## Character Assets
+슥구 캐릭터는 제품 경험의 핵심 시각 자산이다. 새 슥구 이미지나 애니메이션을 만들 때는 `docs/sggu-character-guide.md`를 먼저 따르고, 기준 에셋은 `public/sggu-cutout.png`로 삼는다. 이미지 생성 프롬프트와 ComfyUI/inpaint 작업은 `docs/sggu-prompt-rules.md`를 기준으로 작성한다.
+
 ## Do's and Don'ts
 - Do 가장 중요한 액션 하나만 강하게 강조한다.
 - Do 여백과 타이포그래피로 정보 위계를 만든다.

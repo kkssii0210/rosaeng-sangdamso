@@ -60,11 +60,14 @@ class CharacterServiceTest {
         assertThat(response.skills().get("source").asString()).isEqualTo("skills");
         assertThat(response.engravings().get(0).get("EfficiencyText").asString()).isEqualTo("20.00%");
         assertThat(response.gems().get(0).get("SkillName").asString()).isEqualTo("글러트니");
+        assertThat(response.mainStats().get("MainStatTotal").asInt()).isGreaterThanOrEqualTo(0);
+        assertThat(response.avatarStats().get("AppliedAvatarCount").asInt()).isGreaterThanOrEqualTo(0);
         assertThat(response.classIdentityEffects().get("ClassName").asString()).isEqualTo("소울이터");
         assertThat(response.classIdentityEffects().get("Effects").get(0).get("IsActive").asBoolean()).isTrue();
         assertThat(response.criticalStats().get("ConditionalCriticalRatePercent").asDouble()).isEqualTo(20.0);
-        assertThat(response.combatPowerAnalysis().get("Status").asString()).isEqualTo("partial");
+        assertThat(response.combatPowerAnalysis().get("Status").asString()).isEqualTo("unavailable");
         assertThat(response.combatPowerAnalysis().get("OfficialCombatPower").asDouble()).isEqualTo(123456.78);
+        assertThat(response.combatPowerAnalysis().get("OfficialCombatPowerFloor").asInt()).isEqualTo(123456);
         assertThat(response.upgradeEfficiency().get("MarketDataStatus").asString()).isEqualTo("unavailable");
     }
 

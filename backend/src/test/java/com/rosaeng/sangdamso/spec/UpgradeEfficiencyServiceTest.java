@@ -1,7 +1,10 @@
 package com.rosaeng.sangdamso.spec;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Offset.offset;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -120,6 +123,32 @@ class UpgradeEfficiencyServiceTest {
             assertThat(candidate.get("Label").asString()).isEqualTo("아드레날린 각인 4->5"));
     }
 
+    @Test
+    void matchesSupportedFieldsFromUpgradeEfficiencyGoldenFixture() throws IOException {
+        JsonNode fixture = readFixture("golden/upgrade-efficiency.json");
+        JsonNode input = fixture.get("input");
+        JsonNode expected = fixture.get("expected");
+        JsonNode result = service.build(Map.of(
+            "profile", input.get("profile"),
+            "equipment", input.get("equipment"),
+            "marketSnapshot", input.get("marketSnapshot")
+        ));
+
+        assertThat(result.get("MarketDataStatus").asString()).isEqualTo(expected.get("MarketDataStatus").asString());
+        assertThat(result.get("CostInputs").get("Honing").get("WeaponMaterials").get(0).get("UnitPrice").asDouble())
+            .isCloseTo(expected.get("CostInputs").get("Honing").get("WeaponMaterials").get(0).get("UnitPrice").asDouble(), offset(0.000000001));
+        assertThat(candidateByType(result, "weaponHoning")).isNotNull();
+        assertThat(candidateByType(result, "armorHoning")).isNotNull();
+
+        JsonNode expectedAvatar = candidateByType(expected, "legendaryAvatar");
+        JsonNode actualAvatar = candidateByType(result, "legendaryAvatar");
+        assertThat(actualAvatar).isNotNull();
+        assertThat(actualAvatar.get("Label").asString()).isEqualTo(expectedAvatar.get("Label").asString());
+        assertThat(actualAvatar.get("NetCostGold").asInt()).isEqualTo(expectedAvatar.get("NetCostGold").asInt());
+        assertThat(actualAvatar.get("GainPercent").asDouble())
+            .isCloseTo(expectedAvatar.get("GainPercent").asDouble(), offset(0.000000001));
+    }
+
     private JsonNode candidateByType(JsonNode result, String type) {
         for (JsonNode candidate : result.get("Candidates")) {
             if (type.equals(candidate.get("Type").asString())) {
@@ -223,5 +252,12 @@ class UpgradeEfficiencyServiceTest {
             "gemEffectType", effectType,
             "gemEffectValue", effectValue
         );
+    }
+
+    private JsonNode readFixture(String fixture) throws IOException {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fixture)) {
+            assertThat(inputStream).as("fixture %s should exist", fixture).isNotNull();
+            return objectMapper.readTree(inputStream);
+        }
     }
 }

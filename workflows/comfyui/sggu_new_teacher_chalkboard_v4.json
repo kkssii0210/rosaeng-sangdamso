@@ -1,0 +1,125 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "animagine-xl-4.0-opt.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-cutout.png"
+    }
+  },
+  "3": {
+    "class_type": "IPAdapterUnifiedLoader",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "preset": "PLUS (high strength)"
+    }
+  },
+  "4": {
+    "class_type": "IPAdapterAdvanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "ipadapter": [
+        "3",
+        1
+      ],
+      "image": [
+        "2",
+        0
+      ],
+      "weight": 0.55,
+      "weight_type": "linear",
+      "combine_embeds": "average",
+      "start_at": 0.0,
+      "end_at": 0.6,
+      "embeds_scaling": "V only"
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "masterpiece, best quality, polished chibi anime male teacher mascot, full body, small cute authoritative proportions, black spiky side-parted hair with sharp hair tufts, thick angular black eyebrows, bright cyan blue eyes, pale skin, calm stern confident expression, black suit uniform, white shirt, black tie, small silver chain detail on jacket. He is standing beside a green classroom chalkboard and explaining a lesson, one hand holding a normal long wooden classroom pointer stick touching the chalkboard, the other hand gesturing naturally. clear teaching pose, natural hands, UI game mascot asset, clean anime line art, simple classroom background, no text on board"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "low quality, worst quality, bad anatomy, bad hands, extra fingers, missing fingers, pipe, smoking pipe, smoke, cigarette, cigar, cup, mug, gun, weapon, sci fi, blaster, microphone, face covered, different hair color, brown hair, long hair, girl, beard, moustache, old man, realistic, text, watermark, logo, blurry, deformed, extra limbs"
+    }
+  },
+  "7": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 832,
+      "height": 1216,
+      "batch_size": 1
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "5",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "latent_image": [
+        "7",
+        0
+      ],
+      "seed": 2026061111,
+      "steps": 34,
+      "cfg": 6.8,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "9",
+        0
+      ],
+      "filename_prefix": "sggu_new_teacher_chalkboard_v4"
+    }
+  }
+}

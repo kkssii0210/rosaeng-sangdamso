@@ -1,7 +1,10 @@
-import { buildAvatarStatSummary, formatAvatarStatPercent } from "../lib/ui/avatarStats.js";
+function formatAvatarStatPercent(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && Number.isInteger(number) ? String(number) : String(value ?? "0");
+}
 
-export default function AvatarSummaryPanel({ avatars }) {
-  const summary = buildAvatarStatSummary(avatars);
+export default function AvatarSummaryPanel({ avatars, avatarStats }) {
+  const summary = avatarStats || { StatBonuses: [], AppliedAvatarCount: 0, IgnoredStatEffectCount: 0 };
   const statBonuses = summary.StatBonuses || [];
   const avatarCount = Array.isArray(avatars) ? avatars.length : 0;
 

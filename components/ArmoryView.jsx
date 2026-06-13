@@ -28,6 +28,10 @@ export default function ArmoryView({ armory }) {
   const gems = Array.isArray(armory?.gems) ? armory.gems : [];
   const avatars = Array.isArray(armory?.avatars) ? armory.avatars : [];
   const criticalStats = armory?.criticalStats || {};
+  const mainStats = armory?.mainStats || null;
+  const avatarStats = armory?.avatarStats || null;
+  const accessoryContributions = armory?.accessoryContributions || {};
+  const engravingContributions = armory?.engravingContributions || {};
   const profileImage = valueOf(profile, ["CharacterImage", "characterImage"], "");
   const characterName = valueOf(profile, ["CharacterName", "characterName"], "캐릭터");
   const serverName = valueOf(profile, ["ServerName", "serverName"], "-");
@@ -131,6 +135,10 @@ export default function ArmoryView({ armory }) {
           profile={profile}
           avatars={avatars}
           criticalStats={criticalStats}
+          mainStats={mainStats}
+          avatarStats={avatarStats}
+          accessoryContributions={accessoryContributions}
+          engravingContributions={engravingContributions}
         />
       ) : activePage === "build" ? (
         <ArkPassiveSkillsPage arkPassive={armory?.arkPassive || {}} skills={visibleSkills} />

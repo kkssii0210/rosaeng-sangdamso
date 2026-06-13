@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { buildEngravingContributionIndex } from "../lib/ui/engravingContributions.js";
 import { listOf, valueOf } from "./armoryUtils.js";
 
 function gradeClass(grade) {
@@ -16,7 +15,7 @@ function gradeClass(grade) {
   return "default";
 }
 
-export default function EngravingsPanel({ engravings, criticalStats }) {
+export default function EngravingsPanel({ engravings, criticalStats, engravingContributions = {} }) {
   if (!engravings.length) {
     return (
       <section className="info-panel engravings-panel" aria-labelledby="engravings-title">
@@ -30,8 +29,6 @@ export default function EngravingsPanel({ engravings, criticalStats }) {
       </section>
     );
   }
-
-  const engravingContributions = buildEngravingContributionIndex(engravings, criticalStats);
 
   return (
     <section className="info-panel engravings-panel" aria-labelledby="engravings-title">

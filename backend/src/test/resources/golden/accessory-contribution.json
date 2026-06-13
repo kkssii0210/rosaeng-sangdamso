@@ -1,0 +1,115 @@
+{
+  "name": "accessory-contribution",
+  "source": "lib/spec/accessoryContributions.js::buildAccessoryContributionIndex",
+  "scope": "mixed-accessory-effects-seed",
+  "input": {
+    "profile": {
+      "Stats": [
+        {
+          "Type": "치명",
+          "Value": "1200",
+          "Tooltip": [
+            "치명타 적중률이 42.00% 증가합니다."
+          ]
+        }
+      ]
+    },
+    "equipment": [
+      {
+        "Type": "무기",
+        "Name": "+11 무기",
+        "WeaponStats": {
+          "AdditionalDamage": {
+            "Value": 30,
+            "Text": "추가 피해 +30.00%"
+          }
+        }
+      },
+      {
+        "Type": "목걸이",
+        "Name": "피해 목걸이",
+        "DetailSections": [
+          {
+            "title": "연마 효과",
+            "lines": [
+              "추가 피해 +1.20%",
+              "적에게 주는 피해 +0.75%"
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "반지",
+        "Name": "치명 반지",
+        "DetailSections": [
+          {
+            "title": "연마 효과",
+            "lines": [
+              "치명타 적중률 +0.40%",
+              "치명타 피해 +1.10%"
+            ]
+          }
+        ]
+      }
+    ],
+    "criticalStats": {
+      "GlobalCriticalRatePercent": 42,
+      "GlobalCriticalDamageBonusPercent": 50,
+      "GlobalAdditionalDamagePercent": 10,
+      "CriticalRateLimitPercent": 100
+    }
+  },
+  "expected": {
+    "lines": {
+      "1:0:0": {
+        "line": "추가 피해 +1.20%",
+        "bucket": "additionalDamage",
+        "mode": "additive",
+        "value": 1.2,
+        "ContributionPercent": 0.8571428571428674,
+        "ContributionText": "0.86%"
+      },
+      "1:0:1": {
+        "line": "적에게 주는 피해 +0.75%",
+        "bucket": "outgoingDamage",
+        "mode": "multiplicative",
+        "value": 0.75,
+        "ContributionPercent": 0.7500000000000062,
+        "ContributionText": "0.75%"
+      },
+      "2:0:0": {
+        "line": "치명타 적중률 +0.40%",
+        "bucket": "critRate",
+        "mode": "critRate",
+        "value": 0.4,
+        "ContributionPercent": 0.3694581280788256,
+        "ContributionText": "0.37%"
+      },
+      "2:0:1": {
+        "line": "치명타 피해 +1.10%",
+        "bucket": "critDamage",
+        "mode": "critDamage",
+        "value": 1.1,
+        "ContributionPercent": 0.2842412235907865,
+        "ContributionText": "0.28%"
+      }
+    },
+    "itemTotals": {
+      "1": 1.6135714285714364,
+      "2": 0.6530717094473282
+    },
+    "CriticalContext": {
+      "AdditionalDamagePercent": 40,
+      "CritRatePercent": 41.6,
+      "CritDamageBonusPercent": 48.9,
+      "CriticalOutgoingDamagePercent": 0,
+      "AttackPowerPercent": 0,
+      "WeaponPowerPercent": 0,
+      "FixedEvolutionDamagePercent": 0,
+      "CriticalRateCapPercent": 100,
+      "ConvertedEvolutionDamagePercent": 0
+    },
+    "TotalContributionPercent": 2.2771809165304857,
+    "TotalContributionText": "2.28%"
+  }
+}

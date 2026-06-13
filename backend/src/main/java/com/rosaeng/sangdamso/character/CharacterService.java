@@ -8,14 +8,18 @@ import com.rosaeng.sangdamso.character.engraving.EngravingsNormalizer;
 import com.rosaeng.sangdamso.common.BffException;
 import com.rosaeng.sangdamso.character.equipment.EquipmentNormalizer;
 import com.rosaeng.sangdamso.character.gems.GemsNormalizer;
+import com.rosaeng.sangdamso.efficiency.AccessoryContributionService;
+import com.rosaeng.sangdamso.efficiency.EngravingContributionService;
 import com.rosaeng.sangdamso.efficiency.SpecUpCharacterContext;
 import com.rosaeng.sangdamso.lostark.LostarkApiClient;
 import com.rosaeng.sangdamso.lostark.LostarkApiErrorCode;
 import com.rosaeng.sangdamso.lostark.LostarkApiException;
 import com.rosaeng.sangdamso.market.MarketSnapshotService;
+import com.rosaeng.sangdamso.spec.AvatarStatsService;
 import com.rosaeng.sangdamso.spec.ClassIdentityService;
 import com.rosaeng.sangdamso.spec.CombatPowerAnalysisService;
 import com.rosaeng.sangdamso.spec.CriticalStatsService;
+import com.rosaeng.sangdamso.spec.MainStatsService;
 import com.rosaeng.sangdamso.spec.UpgradeEfficiencyService;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -36,14 +40,18 @@ public class CharacterService {
 
     private final LostarkApiClient lostarkApiClient;
     private final MarketSnapshotService marketSnapshotService;
+    private final AccessoryContributionService accessoryContributionService = new AccessoryContributionService();
+    private final AvatarStatsService avatarStatsService = new AvatarStatsService();
     private final AvatarNormalizer avatarNormalizer = new AvatarNormalizer();
     private final CardsNormalizer cardsNormalizer = new CardsNormalizer();
     private final ClassIdentityService classIdentityService = new ClassIdentityService();
     private final CombatPowerAnalysisService combatPowerAnalysisService = new CombatPowerAnalysisService();
     private final CriticalStatsService criticalStatsService = new CriticalStatsService();
     private final EngravingsNormalizer engravingsNormalizer = new EngravingsNormalizer();
+    private final EngravingContributionService engravingContributionService = new EngravingContributionService();
     private final EquipmentNormalizer equipmentNormalizer = new EquipmentNormalizer();
     private final GemsNormalizer gemsNormalizer = new GemsNormalizer();
+    private final MainStatsService mainStatsService = new MainStatsService();
     private final UpgradeEfficiencyService upgradeEfficiencyService = new UpgradeEfficiencyService();
 
     public CharacterService(LostarkApiClient lostarkApiClient) {
@@ -73,6 +81,18 @@ public class CharacterService {
             context.engravingBookPrices()
         ));
 
+        JsonNode mainStats = mainStatsService.build(context.equipment());
+        JsonNode avatarStats = avatarStatsService.build(context.avatars());
+        JsonNode accessoryContributions = accessoryContributionService.build(
+            context.equipment(),
+            context.profile(),
+            context.criticalStats()
+        );
+        JsonNode engravingContributions = engravingContributionService.build(
+            context.engravings(),
+            context.criticalStats()
+        );
+
         return new CharacterResponse(
             context.profile(),
             context.equipment(),
@@ -84,8 +104,12 @@ public class CharacterService {
             context.skills(),
             context.engravings(),
             context.gems(),
+            mainStats,
+            avatarStats,
             context.classIdentityEffects(),
             context.criticalStats(),
+            accessoryContributions,
+            engravingContributions,
             context.combatPowerAnalysis(),
             upgradeEfficiency
         );

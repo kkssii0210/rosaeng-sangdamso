@@ -1,0 +1,214 @@
+{
+  "name": "accessory-efficiency",
+  "source": "lib/spec/accessoryEfficiencySimulation.js::buildAccessoryEfficiencyRecommendation",
+  "scope": "single-ring-replacement-seed",
+  "input": {
+    "profile": {
+      "CharacterClassName": "창술사",
+      "CombatPower": "1000000",
+      "Stats": [
+        {
+          "Type": "치명",
+          "Value": "1000"
+        }
+      ]
+    },
+    "equipment": [
+      {
+        "Type": "무기",
+        "Name": "+11 무기",
+        "MainStatValue": 0,
+        "WeaponStats": {
+          "WeaponPower": {
+            "Value": 100000
+          }
+        }
+      },
+      {
+        "Type": "반지",
+        "Name": "현재 반지",
+        "Grade": "고대",
+        "Quality": 90,
+        "MainStatValue": 10000,
+        "EnlightenmentPoint": 8,
+        "DetailSections": [
+          {
+            "title": "기본 효과",
+            "lines": [
+              "힘 +10000",
+              "치명 +200"
+            ]
+          }
+        ]
+      }
+    ],
+    "candidates": [
+      {
+        "Type": "반지",
+        "Name": "더 좋은 반지",
+        "Grade": "고대",
+        "Quality": 92,
+        "BuyPrice": 10000,
+        "TargetEquipmentIndex": 1,
+        "MainStatValue": 14000,
+        "EnlightenmentPoint": 9,
+        "DetailSections": [
+          {
+            "title": "기본 효과",
+            "lines": [
+              "힘 +14000",
+              "치명 +260"
+            ]
+          }
+        ]
+      }
+    ],
+    "combatContext": {
+      "arkPassive": {
+        "Points": [
+          {
+            "Name": "깨달음",
+            "Value": 80
+          }
+        ]
+      },
+      "engravings": [],
+      "gems": []
+    },
+    "criticalStats": null
+  },
+  "expected": {
+    "Status": "ready",
+    "TopRecommendation": {
+      "Type": "accessory",
+      "Candidate": {
+        "Type": "반지",
+        "Name": "더 좋은 반지",
+        "Grade": "고대",
+        "Quality": 92,
+        "BuyPrice": 10000,
+        "TargetEquipmentIndex": 1,
+        "MainStatValue": 14000,
+        "EnlightenmentPoint": 9,
+        "DetailSections": [
+          {
+            "title": "기본 효과",
+            "lines": [
+              "힘 +14000",
+              "치명 +260"
+            ]
+          }
+        ]
+      },
+      "ReplacedAccessory": {
+        "Type": "반지",
+        "Name": "현재 반지",
+        "Grade": "고대",
+        "Quality": 90,
+        "MainStatValue": 10000,
+        "EnlightenmentPoint": 8,
+        "DetailSections": [
+          {
+            "title": "기본 효과",
+            "lines": [
+              "힘 +10000",
+              "치명 +200"
+            ]
+          }
+        ]
+      },
+      "ReplacedEquipmentIndex": 1,
+      "MainStatName": "힘",
+      "CurrentOfficialCombatPower": 1000000,
+      "ExpectedCombatPower": 1000000.97,
+      "CombatPowerGain": 0.9699999999999998,
+      "CombatPowerGainPercent": 0.00009699999999999999,
+      "BuyPrice": 10000,
+      "GoldPerOnePercentCombatPower": 103092783.50515465,
+      "DamageReference": {
+        "CandidateContributionPercent": 0,
+        "CandidateContributionText": "0.00%",
+        "TotalContributionPercent": 0,
+        "TotalContributionText": "0.00%",
+        "CriticalContext": {
+          "AdditionalDamagePercent": 0,
+          "CritRatePercent": 0,
+          "CritDamageBonusPercent": 0,
+          "CriticalOutgoingDamagePercent": 0,
+          "AttackPowerPercent": 0,
+          "WeaponPowerPercent": 0,
+          "FixedEvolutionDamagePercent": 0,
+          "CriticalRateCapPercent": 100,
+          "ConvertedEvolutionDamagePercent": 0
+        }
+      }
+    },
+    "Comparisons": [
+      {
+        "Type": "accessory",
+        "Candidate": {
+          "Type": "반지",
+          "Name": "더 좋은 반지",
+          "Grade": "고대",
+          "Quality": 92,
+          "BuyPrice": 10000,
+          "TargetEquipmentIndex": 1,
+          "MainStatValue": 14000,
+          "EnlightenmentPoint": 9,
+          "DetailSections": [
+            {
+              "title": "기본 효과",
+              "lines": [
+                "힘 +14000",
+                "치명 +260"
+              ]
+            }
+          ]
+        },
+        "ReplacedAccessory": {
+          "Type": "반지",
+          "Name": "현재 반지",
+          "Grade": "고대",
+          "Quality": 90,
+          "MainStatValue": 10000,
+          "EnlightenmentPoint": 8,
+          "DetailSections": [
+            {
+              "title": "기본 효과",
+              "lines": [
+                "힘 +10000",
+                "치명 +200"
+              ]
+            }
+          ]
+        },
+        "ReplacedEquipmentIndex": 1,
+        "MainStatName": "힘",
+        "CurrentOfficialCombatPower": 1000000,
+        "ExpectedCombatPower": 1000000.97,
+        "CombatPowerGain": 0.9699999999999998,
+        "CombatPowerGainPercent": 0.00009699999999999999,
+        "BuyPrice": 10000,
+        "GoldPerOnePercentCombatPower": 103092783.50515465,
+        "DamageReference": {
+          "CandidateContributionPercent": 0,
+          "CandidateContributionText": "0.00%",
+          "TotalContributionPercent": 0,
+          "TotalContributionText": "0.00%",
+          "CriticalContext": {
+            "AdditionalDamagePercent": 0,
+            "CritRatePercent": 0,
+            "CritDamageBonusPercent": 0,
+            "CriticalOutgoingDamagePercent": 0,
+            "AttackPowerPercent": 0,
+            "WeaponPowerPercent": 0,
+            "FixedEvolutionDamagePercent": 0,
+            "CriticalRateCapPercent": 100,
+            "ConvertedEvolutionDamagePercent": 0
+          }
+        }
+      }
+    ],
+    "MissingInputs": []
+  }
+}

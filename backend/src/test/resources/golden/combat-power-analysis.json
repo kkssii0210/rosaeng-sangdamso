@@ -1,0 +1,133 @@
+{
+  "name": "combat-power-analysis",
+  "source": "lib/spec/combatPowerModel.js::buildCombatPowerAnalysis",
+  "scope": "partial-contract-seed",
+  "input": {
+    "profile": {
+      "CombatPower": "123,456.78",
+      "CharacterLevel": 70
+    },
+    "paradiseOrb": {
+      "Name": "눈부신 비전의 보주",
+      "EffectName": "맥스웰 맥시마",
+      "EffectRole": "attack",
+      "MaxParadisePower": {
+        "Value": 48275714,
+        "Text": "시즌2 달성 최대 낙원력 : 48,275,714"
+      }
+    },
+    "criticalStats": {
+      "GlobalCriticalRatePercent": 39.92,
+      "EvolutionDamagePercent": 86.34
+    }
+  },
+  "expected": {
+    "Status": "unavailable",
+    "OfficialCombatPower": 123456.78,
+    "OfficialCombatPowerFloor": 123456,
+    "ParadisePower": {
+      "Value": 48275714,
+      "Text": "시즌2 달성 최대 낙원력 : 48,275,714",
+      "EffectName": "맥스웰 맥시마",
+      "EffectRole": "attack",
+      "SourceName": "눈부신 비전의 보주"
+    },
+    "AttackBreakdown": {
+      "ProfileAttackPower": null,
+      "BasicAttackPower": null,
+      "AttackIncreasePower": null,
+      "TooltipText": "",
+      "BasicAttackPercent": 0,
+      "BasicAttackMultiplier": 1,
+      "BasicAttackPercentSources": [],
+      "BaseAttackBeforeBasicPercent": null,
+      "BaseAttackSource": "missing",
+      "ProfileBaseAttackBeforeBasicPercent": null,
+      "SelectedBasicAttackPower": null,
+      "EquipmentMainStatTotal": null,
+      "EquipmentWeaponPower": null,
+      "EquipmentFlatWeaponPower": null,
+      "EquipmentFlatWeaponPowerSources": [],
+      "EquipmentWeaponPowerBeforePercent": null,
+      "EquipmentWeaponPowerPercent": 0,
+      "EquipmentWeaponPowerPercentSources": [],
+      "EquipmentEffectiveWeaponPower": null,
+      "EquipmentEffectiveWeaponPowerDisplay": null,
+      "EquipmentWeaponName": "",
+      "EquipmentFormulaBaseAttackPower": null,
+      "EquipmentFormulaGap": null,
+      "EquipmentFormulaGapPercent": null,
+      "AttackIncreasePercent": null
+    },
+    "Formula": {
+      "SourceBaseCoefficient": 0.0288,
+      "InGameDisplayScale": 0.01,
+      "EffectiveCoefficient": 0.000288,
+      "BaseScore": null,
+      "KnownFactorMultiplier": 1.34708333,
+      "Estimate": null,
+      "EstimateFloor": null,
+      "DeltaFromOfficial": null,
+      "DeltaFromOfficialPercent": null,
+      "DeltaFromOfficialFloor": null,
+      "CalibrationRatio": null,
+      "CalibratedEstimate": null
+    },
+    "Factors": [
+      {
+        "Id": "combat-level",
+        "Category": "level",
+        "Label": "전투 Lv.70",
+        "Percent": 29.45,
+        "Confidence": "high",
+        "AppliesToEstimate": true,
+        "Multiplier": 1.2945,
+        "EstimateMultiplier": 1.2945
+      },
+      {
+        "Id": "paradise-orb",
+        "Category": "paradiseOrb",
+        "Label": "공격형 보주",
+        "Percent": 4.06206,
+        "ParadisePower": 48275714,
+        "EffectName": "맥스웰 맥시마",
+        "BasisPoints": 406.20571,
+        "Confidence": "low",
+        "AppliesToEstimate": true,
+        "Multiplier": 1.04062057,
+        "EstimateMultiplier": 1.04062057
+      }
+    ],
+    "CategorySummary": [
+      {
+        "Category": "level",
+        "Count": 1,
+        "Multiplier": 1.2945,
+        "EstimateMultiplier": 1.2945,
+        "Percent": 29.45,
+        "Confidence": "high",
+        "EstimatePercent": 29.45
+      },
+      {
+        "Category": "paradiseOrb",
+        "Count": 1,
+        "Multiplier": 1.04062057,
+        "EstimateMultiplier": 1.04062057,
+        "Percent": 4.06,
+        "Confidence": "low",
+        "EstimatePercent": 4.06
+      }
+    ],
+    "MissingInputs": [
+      "프로필 기본 공격력 툴팁/장비식 순수공 모두 없음. 공격력 기반 전투력 계산 불가.",
+      "보주 낙원력 전투력 계수 적용. 공격형/보조형 분류는 보주 특수 효과 툴팁 기반.",
+      "아크패시브 포인트는 진화/깨달음/도약을 별도 bucket으로 나눠 서로 곱함. 진화 점수는 1티어 특성 레벨을 뺀 추정치.",
+      "깨달음 전투력 포인트는 100P cap, 포인트당 0.7%로 반영. 100P와 101P 모두 +70%.",
+      "아크그리드 코어 정보를 찾지 못함.",
+      "각인 정보 없음. 각인 전투력 계수 미적용.",
+      "진화 첫줄 스탯 포인트는 제외하고 2T-4T 사용 포인트만 포인트당 0.75%로 반영.",
+      "일반 스킬 보석은 기본공%와 별도 4티어 레벨별 순수 전투력 계수를 함께 반영.",
+      "팔찌 특수 옵션은 상/중/하 전투력 계수표 기반으로 반영. 전투특성/도약/기본 무기공격력은 앞선 항목과 중복 계산하지 않음."
+    ]
+  }
+}

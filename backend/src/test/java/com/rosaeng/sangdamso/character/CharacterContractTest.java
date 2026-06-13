@@ -19,8 +19,12 @@ class CharacterContractTest {
         "skills",
         "engravings",
         "gems",
+        "mainStats",
+        "avatarStats",
         "classIdentityEffects",
         "criticalStats",
+        "accessoryContributions",
+        "engravingContributions",
         "combatPowerAnalysis",
         "upgradeEfficiency"
     };
@@ -40,6 +44,10 @@ class CharacterContractTest {
             objectMapper.createArrayNode(),
             objectMapper.createObjectNode(),
             objectMapper.createObjectNode(),
+            null,
+            null,
+            null,
+            null,
             null,
             null,
             null,

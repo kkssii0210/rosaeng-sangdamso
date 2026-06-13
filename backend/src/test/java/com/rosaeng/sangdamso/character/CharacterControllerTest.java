@@ -103,6 +103,10 @@ class CharacterControllerTest {
             null,
             null,
             null,
+            null,
+            null,
+            null,
+            null,
             null
         ));
 
@@ -118,8 +122,12 @@ class CharacterControllerTest {
             .andExpect(jsonPath("$.skills.source").value("skills"))
             .andExpect(jsonPath("$.engravings.source").value("engravings"))
             .andExpect(jsonPath("$.gems.source").value("gems"))
+            .andExpect(jsonPath("$.mainStats").value(nullValue()))
+            .andExpect(jsonPath("$.avatarStats").value(nullValue()))
             .andExpect(jsonPath("$.classIdentityEffects").value(nullValue()))
             .andExpect(jsonPath("$.criticalStats").value(nullValue()))
+            .andExpect(jsonPath("$.accessoryContributions").value(nullValue()))
+            .andExpect(jsonPath("$.engravingContributions").value(nullValue()))
             .andExpect(jsonPath("$.combatPowerAnalysis").value(nullValue()))
             .andExpect(jsonPath("$.upgradeEfficiency").value(nullValue()));
 

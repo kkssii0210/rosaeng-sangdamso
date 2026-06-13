@@ -15,6 +15,10 @@ public class UpgradeCombatPowerEstimator {
     private static final Pattern BASIC_ATTACK_PATTERN = Pattern.compile("기본 공격력(?:은)?\\s*(?<value>[\\d,]+)");
 
     public Double estimate(JsonNode profile, JsonNode equipment, JsonNode engravings, JsonNode gems) {
+        return estimate(profile, equipment, engravings, gems, null);
+    }
+
+    public Double estimate(JsonNode profile, JsonNode equipment, JsonNode engravings, JsonNode gems, JsonNode arkPassive) {
         double basicAttackPercent = basicAttackPercent(gems);
         Double baseAttack = baseAttack(profile, equipment, basicAttackPercent);
 
@@ -25,6 +29,8 @@ public class UpgradeCombatPowerEstimator {
         double multiplier = 1;
         multiplier *= 1 + basicAttackPercent / 100;
         multiplier *= 1 + combatLevelPercent(profile) / 100;
+        multiplier *= 1 + combatStatsPercent(profile) / 100;
+        multiplier *= 1 + arkPassivePercent(arkPassive) / 100;
         multiplier *= gemMultiplier(gems);
         multiplier *= engravingMultiplier(engravings);
 
@@ -131,6 +137,40 @@ public class UpgradeCombatPowerEstimator {
 
         if (level >= 55) {
             return 8.95;
+        }
+
+        return 0;
+    }
+
+    private double combatStatsPercent(JsonNode profile) {
+        double total = 0;
+        total += profileStatNumber(profile, "치명");
+        total += profileStatNumber(profile, "특화");
+        total += profileStatNumber(profile, "신속");
+        return total * 0.03;
+    }
+
+    private double profileStatNumber(JsonNode profile, String type) {
+        for (JsonNode stat : arrayItems(value(profile, "Stats", "stats"))) {
+            if (type.equals(textValue(stat, "Type", "type"))) {
+                return numberValue(stat, "Value", "value");
+            }
+        }
+
+        return 0;
+    }
+
+    private double arkPassivePercent(JsonNode arkPassive) {
+        double enlightenmentPoints = arkPassivePointValue(arkPassive, "깨달음");
+        double cappedEnlightenmentPoints = Math.min(enlightenmentPoints, 100);
+        return cappedEnlightenmentPoints * 0.7;
+    }
+
+    private double arkPassivePointValue(JsonNode arkPassive, String name) {
+        for (JsonNode point : arrayItems(value(arkPassive, "Points", "points"))) {
+            if (name.equals(textValue(point, "Name", "name"))) {
+                return numberValue(point, "Value", "value");
+            }
         }
 
         return 0;

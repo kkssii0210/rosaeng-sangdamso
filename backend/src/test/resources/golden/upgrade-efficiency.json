@@ -1,0 +1,795 @@
+{
+  "name": "upgrade-efficiency",
+  "source": "lib/spec/upgradeEfficiency.js::buildUpgradeEfficiency",
+  "scope": "market-honing-and-avatar-seed",
+  "input": {
+    "profile": {
+      "CharacterName": "도화가"
+    },
+    "equipment": [
+      {
+        "Type": "무기",
+        "Name": "+11 세르카 고대 무기",
+        "WeaponStats": {
+          "WeaponPower": {
+            "Value": 167706
+          }
+        }
+      },
+      {
+        "Type": "투구",
+        "Name": "+11 세르카 고대 투구",
+        "MainStatValue": 96801
+      },
+      {
+        "Type": "어깨",
+        "Name": "+11 세르카 고대 어깨",
+        "MainStatValue": 103023
+      },
+      {
+        "Type": "상의",
+        "Name": "+11 세르카 고대 상의",
+        "MainStatValue": 77441
+      },
+      {
+        "Type": "하의",
+        "Name": "+11 세르카 고대 하의",
+        "MainStatValue": 83664
+      },
+      {
+        "Type": "장갑",
+        "Name": "+11 세르카 고대 장갑",
+        "MainStatValue": 116161
+      }
+    ],
+    "marketSnapshot": {
+      "updatedAt": "2026-05-29T00:00:00Z",
+      "groups": [
+        {
+          "id": "honing-materials",
+          "items": [
+            {
+              "name": "운명의 파괴석 결정",
+              "currentMinPrice": 1688,
+              "bundleCount": 100
+            },
+            {
+              "name": "운명의 수호석 결정",
+              "currentMinPrice": 50,
+              "bundleCount": 100
+            },
+            {
+              "name": "위대한 운명의 돌파석",
+              "currentMinPrice": 14,
+              "bundleCount": 1
+            },
+            {
+              "name": "상급 아비도스 융화 재료",
+              "currentMinPrice": 142,
+              "bundleCount": 1
+            },
+            {
+              "name": "운명의 파편 주머니(소)",
+              "currentMinPrice": 60,
+              "bundleCount": 1
+            },
+            {
+              "name": "운명의 파편 주머니(대)",
+              "currentMinPrice": 173,
+              "bundleCount": 1
+            }
+          ]
+        },
+        {
+          "id": "honing-supports",
+          "items": [
+            {
+              "name": "용암의 숨결",
+              "currentMinPrice": 365,
+              "bundleCount": 1
+            },
+            {
+              "name": "빙하의 숨결",
+              "currentMinPrice": 290,
+              "bundleCount": 1
+            }
+          ]
+        },
+        {
+          "id": "legendary-avatars",
+          "items": [
+            {
+              "name": "전설 머리",
+              "currentMinPrice": 50000,
+              "bundleCount": 1,
+              "categoryName": "머리"
+            },
+            {
+              "name": "전설 상의",
+              "currentMinPrice": 60000,
+              "bundleCount": 1,
+              "categoryName": "상의"
+            }
+          ]
+        },
+        {
+          "id": "gems",
+          "items": [
+            {
+              "name": "7레벨 겁화의 보석",
+              "currentMinPrice": 100000,
+              "bundleCount": 1,
+              "gemLevel": 7,
+              "gemEffectType": "damage",
+              "gemEffectValue": 24
+            },
+            {
+              "name": "8레벨 겁화의 보석",
+              "currentMinPrice": 200000,
+              "bundleCount": 1,
+              "gemLevel": 8,
+              "gemEffectType": "damage",
+              "gemEffectValue": 30
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expected": {
+    "MarketDataStatus": "ready",
+    "UpdatedAt": "2026-05-29T00:00:00Z",
+    "CostInputs": {
+      "Honing": {
+        "Materials": [
+          {
+            "Name": "운명의 파괴석 결정",
+            "Grade": "",
+            "CurrentMinPrice": 1688,
+            "BundleCount": 100,
+            "UnitPrice": 16.88,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          },
+          {
+            "Name": "운명의 수호석 결정",
+            "Grade": "",
+            "CurrentMinPrice": 50,
+            "BundleCount": 100,
+            "UnitPrice": 0.5,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          },
+          {
+            "Name": "위대한 운명의 돌파석",
+            "Grade": "",
+            "CurrentMinPrice": 14,
+            "BundleCount": 1,
+            "UnitPrice": 14,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          },
+          {
+            "Name": "상급 아비도스 융화 재료",
+            "Grade": "",
+            "CurrentMinPrice": 142,
+            "BundleCount": 1,
+            "UnitPrice": 142,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          },
+          {
+            "Name": "운명의 파편 주머니(소)",
+            "Grade": "",
+            "CurrentMinPrice": 60,
+            "BundleCount": 1,
+            "UnitPrice": 60,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          },
+          {
+            "Name": "운명의 파편 주머니(대)",
+            "Grade": "",
+            "CurrentMinPrice": 173,
+            "BundleCount": 1,
+            "UnitPrice": 173,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          }
+        ],
+        "Supports": [
+          {
+            "Name": "용암의 숨결",
+            "Grade": "",
+            "CurrentMinPrice": 365,
+            "BundleCount": 1,
+            "UnitPrice": 365,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          },
+          {
+            "Name": "빙하의 숨결",
+            "Grade": "",
+            "CurrentMinPrice": 290,
+            "BundleCount": 1,
+            "UnitPrice": 290,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0
+          }
+        ],
+        "WeaponMaterials": [
+          {
+            "Key": "destiny-destruction-stone-crystal",
+            "Name": "운명의 파괴석 결정",
+            "SourceName": "운명의 파괴석 결정",
+            "Grade": "",
+            "CurrentMinPrice": 1688,
+            "BundleCount": 100,
+            "UnitPrice": 16.88,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "운명의 파괴석 결정",
+                "Grade": "",
+                "CurrentMinPrice": 1688,
+                "BundleCount": 100,
+                "UnitPrice": 16.88,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "great-destiny-leapstone",
+            "Name": "위대한 운명의 돌파석",
+            "SourceName": "위대한 운명의 돌파석",
+            "Grade": "",
+            "CurrentMinPrice": 14,
+            "BundleCount": 1,
+            "UnitPrice": 14,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "위대한 운명의 돌파석",
+                "Grade": "",
+                "CurrentMinPrice": 14,
+                "BundleCount": 1,
+                "UnitPrice": 14,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "superior-abidos-fusion-material",
+            "Name": "상급 아비도스 융화제",
+            "SourceName": "상급 아비도스 융화 재료",
+            "Grade": "",
+            "CurrentMinPrice": 142,
+            "BundleCount": 1,
+            "UnitPrice": 142,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "상급 아비도스 융화 재료",
+                "Grade": "",
+                "CurrentMinPrice": 142,
+                "BundleCount": 1,
+                "UnitPrice": 142,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "destiny-shard",
+            "Name": "운명의 파편",
+            "SourceName": "운명의 파편 주머니(소)",
+            "Grade": "",
+            "CurrentMinPrice": 60,
+            "BundleCount": 1,
+            "UnitPrice": 60,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "운명의 파편 주머니(소)",
+                "Grade": "",
+                "CurrentMinPrice": 60,
+                "BundleCount": 1,
+                "UnitPrice": 60,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              },
+              {
+                "Name": "운명의 파편 주머니(대)",
+                "Grade": "",
+                "CurrentMinPrice": 173,
+                "BundleCount": 1,
+                "UnitPrice": 173,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "lava-breath",
+            "Name": "용암의 숨결",
+            "SourceName": "용암의 숨결",
+            "Grade": "",
+            "CurrentMinPrice": 365,
+            "BundleCount": 1,
+            "UnitPrice": 365,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": true,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "용암의 숨결",
+                "Grade": "",
+                "CurrentMinPrice": 365,
+                "BundleCount": 1,
+                "UnitPrice": 365,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          }
+        ],
+        "ArmorMaterials": [
+          {
+            "Key": "destiny-guardian-stone-crystal",
+            "Name": "운명의 수호석 결정",
+            "SourceName": "운명의 수호석 결정",
+            "Grade": "",
+            "CurrentMinPrice": 50,
+            "BundleCount": 100,
+            "UnitPrice": 0.5,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "운명의 수호석 결정",
+                "Grade": "",
+                "CurrentMinPrice": 50,
+                "BundleCount": 100,
+                "UnitPrice": 0.5,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "great-destiny-leapstone",
+            "Name": "위대한 운명의 돌파석",
+            "SourceName": "위대한 운명의 돌파석",
+            "Grade": "",
+            "CurrentMinPrice": 14,
+            "BundleCount": 1,
+            "UnitPrice": 14,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "위대한 운명의 돌파석",
+                "Grade": "",
+                "CurrentMinPrice": 14,
+                "BundleCount": 1,
+                "UnitPrice": 14,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "superior-abidos-fusion-material",
+            "Name": "상급 아비도스 융화제",
+            "SourceName": "상급 아비도스 융화 재료",
+            "Grade": "",
+            "CurrentMinPrice": 142,
+            "BundleCount": 1,
+            "UnitPrice": 142,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "상급 아비도스 융화 재료",
+                "Grade": "",
+                "CurrentMinPrice": 142,
+                "BundleCount": 1,
+                "UnitPrice": 142,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "destiny-shard",
+            "Name": "운명의 파편",
+            "SourceName": "운명의 파편 주머니(소)",
+            "Grade": "",
+            "CurrentMinPrice": 60,
+            "BundleCount": 1,
+            "UnitPrice": 60,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": false,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "운명의 파편 주머니(소)",
+                "Grade": "",
+                "CurrentMinPrice": 60,
+                "BundleCount": 1,
+                "UnitPrice": 60,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              },
+              {
+                "Name": "운명의 파편 주머니(대)",
+                "Grade": "",
+                "CurrentMinPrice": 173,
+                "BundleCount": 1,
+                "UnitPrice": 173,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          },
+          {
+            "Key": "glacier-breath",
+            "Name": "빙하의 숨결",
+            "SourceName": "빙하의 숨결",
+            "Grade": "",
+            "CurrentMinPrice": 290,
+            "BundleCount": 1,
+            "UnitPrice": 290,
+            "RecentPrice": 0,
+            "YesterdayAveragePrice": 0,
+            "IsAdditionalMaterial": true,
+            "IsAvailable": true,
+            "MarketOptions": [
+              {
+                "Name": "빙하의 숨결",
+                "Grade": "",
+                "CurrentMinPrice": 290,
+                "BundleCount": 1,
+                "UnitPrice": 290,
+                "RecentPrice": 0,
+                "YesterdayAveragePrice": 0
+              }
+            ]
+          }
+        ]
+      },
+      "Accessories": {
+        "FloorPrices": [
+          {
+            "Slot": "목걸이",
+            "FloorPrice": 0,
+            "SampleName": ""
+          },
+          {
+            "Slot": "귀걸이",
+            "FloorPrice": 0,
+            "SampleName": ""
+          },
+          {
+            "Slot": "반지",
+            "FloorPrice": 0,
+            "SampleName": ""
+          },
+          {
+            "Slot": "팔찌",
+            "FloorPrice": 0,
+            "SampleName": ""
+          }
+        ],
+        "CurrentTotalContributionPercent": 0,
+        "CurrentTotalContributionText": "0.00%"
+      },
+      "EngravingBooks": [],
+      "LegendaryAvatars": [
+        {
+          "Slot": "무기",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 0,
+          "SampleName": "",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        {
+          "Slot": "머리",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 50000,
+          "SampleName": "전설 머리",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        {
+          "Slot": "상의",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 60000,
+          "SampleName": "전설 상의",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        {
+          "Slot": "하의",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 0,
+          "SampleName": "",
+          "ClassName": "",
+          "Source": "snapshot"
+        }
+      ],
+      "Gems": [
+        {
+          "Level": 7,
+          "EffectType": "damage",
+          "MinBuyPrice": 100000,
+          "EffectValue": 24,
+          "SampleName": "7레벨 겁화의 보석"
+        },
+        {
+          "Level": 8,
+          "EffectType": "damage",
+          "MinBuyPrice": 200000,
+          "EffectValue": 30,
+          "SampleName": "8레벨 겁화의 보석"
+        }
+      ]
+    },
+    "Candidates": [
+      {
+        "Id": "legendary-avatar-머리",
+        "Type": "legendaryAvatar",
+        "Label": "전설 아바타 머리",
+        "CostGold": 50000,
+        "NetCostGold": 50000,
+        "GainPercent": 2,
+        "GainType": "mainStatPercent",
+        "EfficiencyScore": 4,
+        "ScoreUnit": "주스탯 % / 10만 골드",
+        "Target": "머리",
+        "CostDetail": {
+          "Slot": "머리",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 50000,
+          "SampleName": "전설 머리",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        "Caveat": "아바타 주스탯 기준. 실제 최종 피해 환산은 주스탯-공격력 모델 필요"
+      },
+      {
+        "Id": "legendary-avatar-상의",
+        "Type": "legendaryAvatar",
+        "Label": "전설 아바타 상의",
+        "CostGold": 60000,
+        "NetCostGold": 60000,
+        "GainPercent": 2,
+        "GainType": "mainStatPercent",
+        "EfficiencyScore": 3.3333,
+        "ScoreUnit": "주스탯 % / 10만 골드",
+        "Target": "상의",
+        "CostDetail": {
+          "Slot": "상의",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 60000,
+          "SampleName": "전설 상의",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        "Caveat": "아바타 주스탯 기준. 실제 최종 피해 환산은 주스탯-공격력 모델 필요"
+      },
+      {
+        "Id": "armor-honing-장갑-11-12",
+        "Type": "armorHoning",
+        "Label": "장갑 11->12",
+        "CostGold": 65621,
+        "NetCostGold": 65621,
+        "GainPercent": 0.3457,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.5268,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Target": "장갑",
+        "CurrentLevel": 11,
+        "TargetLevel": 12,
+        "MainStatGain": 3304,
+        "CostDetail": {
+          "ExpectedCostGold": 65621,
+          "NoBreathExpectedCostGold": 65621,
+          "FullBreathExpectedCostGold": 86280,
+          "BreathCount": 0,
+          "BreathName": "빙하의 숨결",
+          "BaseSuccessRate": 5
+        },
+        "Caveat": "노숨 기대비용 기준"
+      },
+      {
+        "Id": "armor-honing-어깨-11-12",
+        "Type": "armorHoning",
+        "Label": "어깨 11->12",
+        "CostGold": 65621,
+        "NetCostGold": 65621,
+        "GainPercent": 0.3067,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.4674,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Target": "어깨",
+        "CurrentLevel": 11,
+        "TargetLevel": 12,
+        "MainStatGain": 2931,
+        "CostDetail": {
+          "ExpectedCostGold": 65621,
+          "NoBreathExpectedCostGold": 65621,
+          "FullBreathExpectedCostGold": 86280,
+          "BreathCount": 0,
+          "BreathName": "빙하의 숨결",
+          "BaseSuccessRate": 5
+        },
+        "Caveat": "노숨 기대비용 기준"
+      },
+      {
+        "Id": "armor-honing-투구-11-12",
+        "Type": "armorHoning",
+        "Label": "투구 11->12",
+        "CostGold": 65621,
+        "NetCostGold": 65621,
+        "GainPercent": 0.2881,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.439,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Target": "투구",
+        "CurrentLevel": 11,
+        "TargetLevel": 12,
+        "MainStatGain": 2753,
+        "CostDetail": {
+          "ExpectedCostGold": 65621,
+          "NoBreathExpectedCostGold": 65621,
+          "FullBreathExpectedCostGold": 86280,
+          "BreathCount": 0,
+          "BreathName": "빙하의 숨결",
+          "BaseSuccessRate": 5
+        },
+        "Caveat": "노숨 기대비용 기준"
+      },
+      {
+        "Id": "weapon-honing-11-12",
+        "Type": "weaponHoning",
+        "Label": "무기 11->12",
+        "CostGold": 335468,
+        "NetCostGold": 335468,
+        "GainPercent": 1.4113,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.4207,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Target": "무기",
+        "CurrentLevel": 11,
+        "TargetLevel": 12,
+        "CostDetail": {
+          "ExpectedCostGold": 335468,
+          "NoBreathExpectedCostGold": 427645,
+          "FullBreathExpectedCostGold": 335468,
+          "BreathCount": 20,
+          "BreathName": "용암의 숨결",
+          "BaseSuccessRate": 5
+        },
+        "Caveat": "용암의 숨결 기대비용 기준"
+      },
+      {
+        "Id": "armor-honing-하의-11-12",
+        "Type": "armorHoning",
+        "Label": "하의 11->12",
+        "CostGold": 65621,
+        "NetCostGold": 65621,
+        "GainPercent": 0.249,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.3795,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Target": "하의",
+        "CurrentLevel": 11,
+        "TargetLevel": 12,
+        "MainStatGain": 2379,
+        "CostDetail": {
+          "ExpectedCostGold": 65621,
+          "NoBreathExpectedCostGold": 65621,
+          "FullBreathExpectedCostGold": 86280,
+          "BreathCount": 0,
+          "BreathName": "빙하의 숨결",
+          "BaseSuccessRate": 5
+        },
+        "Caveat": "노숨 기대비용 기준"
+      },
+      {
+        "Id": "armor-honing-상의-11-12",
+        "Type": "armorHoning",
+        "Label": "상의 11->12",
+        "CostGold": 65621,
+        "NetCostGold": 65621,
+        "GainPercent": 0.2305,
+        "GainType": "combatPower",
+        "EfficiencyScore": 0.3513,
+        "ScoreUnit": "전투력 % / 10만 골드",
+        "Target": "상의",
+        "CurrentLevel": 11,
+        "TargetLevel": 12,
+        "MainStatGain": 2202,
+        "CostDetail": {
+          "ExpectedCostGold": 65621,
+          "NoBreathExpectedCostGold": 65621,
+          "FullBreathExpectedCostGold": 86280,
+          "BreathCount": 0,
+          "BreathName": "빙하의 숨결",
+          "BaseSuccessRate": 5
+        },
+        "Caveat": "노숨 기대비용 기준"
+      },
+      {
+        "Id": "legendary-avatar-무기",
+        "Type": "legendaryAvatar",
+        "Label": "전설 아바타 무기",
+        "CostGold": 0,
+        "NetCostGold": 0,
+        "GainPercent": 2,
+        "GainType": "mainStatPercent",
+        "EfficiencyScore": 0,
+        "ScoreUnit": "주스탯 % / 10만 골드",
+        "Target": "무기",
+        "CostDetail": {
+          "Slot": "무기",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 0,
+          "SampleName": "",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        "Caveat": "아바타 주스탯 기준. 실제 최종 피해 환산은 주스탯-공격력 모델 필요"
+      },
+      {
+        "Id": "legendary-avatar-하의",
+        "Type": "legendaryAvatar",
+        "Label": "전설 아바타 하의",
+        "CostGold": 0,
+        "NetCostGold": 0,
+        "GainPercent": 2,
+        "GainType": "mainStatPercent",
+        "EfficiencyScore": 0,
+        "ScoreUnit": "주스탯 % / 10만 골드",
+        "Target": "하의",
+        "CostDetail": {
+          "Slot": "하의",
+          "TargetMainStatPercent": 2,
+          "MinPrice": 0,
+          "SampleName": "",
+          "ClassName": "",
+          "Source": "snapshot"
+        },
+        "Caveat": "아바타 주스탯 기준. 실제 최종 피해 환산은 주스탯-공격력 모델 필요"
+      }
+    ],
+    "MissingInputs": [
+      "악세 효율: 목표 옵션 필터와 후보 악세 옵션별 기여도",
+      "보석 최종 피해 효율: 스킬별 실제 딜 지분"
+    ]
+  }
+}

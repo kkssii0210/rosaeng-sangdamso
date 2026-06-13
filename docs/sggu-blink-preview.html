@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sggu Blink Preview</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --surface: oklch(99% 0.006 255);
+        --panel: oklch(96% 0.008 255);
+        --ink: oklch(22% 0.025 255);
+        --muted: oklch(48% 0.02 255);
+        --skin: #f4c9ad;
+        --line: #101114;
+        --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 18%, oklch(99% 0.01 90), transparent 34rem),
+          var(--surface);
+        color: var(--ink);
+        font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      }
+
+      main {
+        width: min(92vw, 720px);
+        display: grid;
+        gap: 18px;
+        justify-items: center;
+        padding: 32px 20px;
+      }
+
+      .stage {
+        position: relative;
+        width: min(74vw, 360px);
+        aspect-ratio: 2 / 3;
+        display: grid;
+        place-items: center;
+        isolation: isolate;
+      }
+
+      .sggu {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 2 / 3;
+      }
+
+      .sggu-frame {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+
+      .smoke-pulse {
+        position: absolute;
+        z-index: 3;
+        left: 19%;
+        top: 31%;
+        width: 15%;
+        height: 16%;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgb(255 255 255 / 36%), transparent 68%);
+        opacity: 0.38;
+        filter: blur(9px);
+        transform: translate3d(0, 0, 0);
+        animation: smoke-breathe 5.8s var(--ease-out-quart) infinite;
+        pointer-events: none;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border: 1px solid oklch(88% 0.01 255);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid oklch(30% 0.025 255);
+        border-radius: 8px;
+        background: var(--ink);
+        color: oklch(98% 0.006 255);
+        padding: 10px 14px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          transform 160ms var(--ease-out-quart),
+          background-color 160ms var(--ease-out-quart);
+      }
+
+      button:hover {
+        background: oklch(28% 0.03 255);
+      }
+
+      button:active {
+        transform: translateY(1px) scale(0.99);
+      }
+
+      .caption {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      @keyframes smoke-breathe {
+        0%,
+        100% {
+          opacity: 0.22;
+          transform: translate3d(0, 7px, 0) scale(0.9);
+        }
+
+        48% {
+          opacity: 0.42;
+          transform: translate3d(-4px, -5px, 0) scale(1.05);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .smoke-pulse,
+        button {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="stage" aria-label="슥구 눈 깜빡임 미리보기">
+        <div class="sggu" id="sggu">
+          <img class="sggu-frame" id="sgguFrame" src="../public/sggu-blink-frames/sggu-blink-00.png" alt="슥구">
+          <span class="smoke-pulse" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button type="button" id="blinkButton">Blink</button>
+        <p class="caption">앱에는 연결하지 않은 10-frame preview입니다.</p>
+      </div>
+    </main>
+
+    <script>
+      const frameImage = document.querySelector("#sgguFrame");
+      const button = document.querySelector("#blinkButton");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const framePaths = Array.from({ length: 10 }, (_, index) => {
+        return `../public/sggu-blink-frames/sggu-blink-${String(index).padStart(2, "0")}.png`;
+      });
+      const frameDelay = 90;
+      let playing = false;
+      let autoTimer = null;
+
+      for (const src of framePaths) {
+        const image = new Image();
+        image.src = src;
+      }
+
+      function setFrame(index) {
+        frameImage.src = framePaths[index];
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => {
+          window.setTimeout(resolve, ms);
+        });
+      }
+
+      async function playBlink() {
+        if (playing || reducedMotion.matches) {
+          return;
+        }
+
+        playing = true;
+
+        for (let index = 0; index < framePaths.length; index += 1) {
+          setFrame(index);
+          await wait(frameDelay);
+        }
+
+        setFrame(0);
+        playing = false;
+      }
+
+      function scheduleAutoBlink() {
+        window.clearTimeout(autoTimer);
+        autoTimer = window.setTimeout(async () => {
+          await playBlink();
+          scheduleAutoBlink();
+        }, 4300);
+      }
+
+      button.addEventListener("click", playBlink);
+      reducedMotion.addEventListener("change", () => setFrame(0));
+      scheduleAutoBlink();
+    </script>
+  </body>
+</html>

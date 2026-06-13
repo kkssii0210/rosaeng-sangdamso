@@ -1,0 +1,153 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0_inpainting_0.1.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-inpaint-source-white.png"
+    }
+  },
+  "3": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "sggu-pipe-hand-mask-narrow.png",
+      "channel": "red"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "sggu-control-lineart.png"
+    }
+  },
+  "5": {
+    "class_type": "ControlNetLoader",
+    "inputs": {
+      "control_net_name": "controlnet-canny-sdxl-1.0-fp16.safetensors"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "clean precise inpainting edit of the same chibi mascot character, keep all unmasked areas identical, remove smoking pipe and smoke completely, restore clean lower face with small serious mouth, redraw the existing hand naturally, hand holding a very small slim black laser pointer remote like a pen, thin cyan laser beam pointing upper left, no cup, no mug, no pipe, seamless anime line art, same black suit, same cyan eyes, same black spiky hair"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "1",
+        1
+      ],
+      "text": "pipe, smoking pipe, smoke, cigar, cigarette, cup, mug, tumbler, bucket, can, glass, gray blob, black hole, mask over face, beard, moustache, changed hair, changed eyes, different character, deformed face, deformed hand, extra fingers, missing fingers, text, watermark"
+    }
+  },
+  "8": {
+    "class_type": "ControlNetApplyAdvanced",
+    "inputs": {
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "control_net": [
+        "5",
+        0
+      ],
+      "image": [
+        "4",
+        0
+      ],
+      "strength": 0.28,
+      "start_percent": 0.0,
+      "end_percent": 0.5
+    }
+  },
+  "9": {
+    "class_type": "InpaintModelConditioning",
+    "inputs": {
+      "positive": [
+        "8",
+        0
+      ],
+      "negative": [
+        "8",
+        1
+      ],
+      "vae": [
+        "1",
+        2
+      ],
+      "pixels": [
+        "2",
+        0
+      ],
+      "mask": [
+        "3",
+        0
+      ],
+      "noise_mask": true
+    }
+  },
+  "10": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "9",
+        1
+      ],
+      "latent_image": [
+        "9",
+        2
+      ],
+      "seed": 3344556705,
+      "steps": 32,
+      "cfg": 6.8,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.82
+    }
+  },
+  "11": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "12": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "filename_prefix": "sggu_inpaint_controlnet_laser_v3"
+    }
+  }
+}

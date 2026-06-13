@@ -1,0 +1,89 @@
+{
+  "name": "engraving-contribution",
+  "source": "lib/spec/engravingContributions.js::buildEngravingContributionIndex",
+  "scope": "adrenaline-and-keen-blunt-seed",
+  "input": {
+    "engravings": [
+      {
+        "Name": "아드레날린",
+        "Grade": "유물",
+        "Level": 3
+      },
+      {
+        "Name": "예리한 둔기",
+        "Grade": "유물",
+        "Level": 3
+      },
+      {
+        "Name": "원한",
+        "Grade": "유물",
+        "Level": 3
+      }
+    ],
+    "criticalStats": {
+      "GlobalCriticalRatePercent": 65,
+      "GlobalCriticalDamageBonusPercent": 50,
+      "GlobalAttackPowerPercent": 6,
+      "FixedEvolutionDamagePercent": 12,
+      "CriticalOutgoingDamagePercent": 4,
+      "ExpectedDamagePenaltyMultiplier": 0.985,
+      "GlobalSources": [
+        {
+          "SourceType": "engraving",
+          "SourceName": "아드레날린",
+          "Kind": "critRate",
+          "Value": 14
+        },
+        {
+          "SourceType": "engraving",
+          "SourceName": "예리한 둔기",
+          "Kind": "critDamage",
+          "Value": 50
+        }
+      ],
+      "SpecialEngravingSources": [
+        {
+          "SourceType": "engraving",
+          "SourceName": "아드레날린",
+          "Kind": "attackPower",
+          "Value": 6
+        },
+        {
+          "SourceType": "engraving",
+          "SourceName": "예리한 둔기",
+          "Kind": "expectedDamagePenalty",
+          "Multiplier": 0.985
+        }
+      ],
+      "CriticalRateLimit": {
+        "IsActive": true,
+        "SourceName": "예리한 둔기 - 가시",
+        "CapPercent": 80,
+        "OverflowConversionRatePercent": 60,
+        "MaxConvertedEvolutionDamagePercent": 24
+      }
+    }
+  },
+  "expected": {
+    "아드레날린": {
+      "ContributionPercent": 19.07488986784145,
+      "ContributionText": "19.07%",
+      "CriticalRatePercent": 14,
+      "CriticalDamageBonusPercent": 0,
+      "AttackPowerPercent": 6,
+      "ExpectedDamagePenaltyMultiplier": 1,
+      "ConvertedEvolutionDamagePercent": 0,
+      "WithoutConvertedEvolutionDamagePercent": 0
+    },
+    "예리한 둔기": {
+      "ContributionPercent": 18.061104582843733,
+      "ContributionText": "18.06%",
+      "CriticalRatePercent": 0,
+      "CriticalDamageBonusPercent": 50,
+      "AttackPowerPercent": 0,
+      "ExpectedDamagePenaltyMultiplier": 0.985,
+      "ConvertedEvolutionDamagePercent": 0,
+      "WithoutConvertedEvolutionDamagePercent": 0
+    }
+  }
+}

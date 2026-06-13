@@ -13,6 +13,9 @@ import tools.jackson.databind.JsonNode;
 
 public class CombatPowerAnalysisService {
 
+    private static final double SOURCE_BASE_COEFFICIENT = 0.0288;
+    private static final double IN_GAME_DISPLAY_SCALE = 0.01;
+
     public JsonNode build(Map<String, JsonNode> context) {
         JsonNode profile = context.get("profile");
         JsonNode paradiseOrb = context.get("paradiseOrb");
@@ -21,18 +24,25 @@ public class CombatPowerAnalysisService {
         Map<String, Object> paradisePower = paradisePower(paradiseOrb);
         List<Map<String, Object>> categorySummary = categorySummary(criticalStats);
         List<String> missingInputs = new ArrayList<>();
+        Integer officialCombatPowerFloor = officialCombatPower == null ? null : (int) Math.floor(officialCombatPower);
+        double effectiveCoefficient = SOURCE_BASE_COEFFICIENT * IN_GAME_DISPLAY_SCALE;
 
         if (officialCombatPower == null) {
             missingInputs.add("프로필 전투력");
         }
 
         return toJsonNode(orderedMap(
-            "Status", officialCombatPower == null ? "unavailable" : "partial",
+            "Status", "unavailable",
             "OfficialCombatPower", officialCombatPower,
+            "OfficialCombatPowerFloor", officialCombatPowerFloor,
             "Formula", orderedMap(
-                "Estimate", officialCombatPower,
-                "DeltaFromOfficialPercent", officialCombatPower == null ? null : 0,
-                "CalibrationRatio", officialCombatPower == null ? null : 1
+                "SourceBaseCoefficient", SOURCE_BASE_COEFFICIENT,
+                "InGameDisplayScale", IN_GAME_DISPLAY_SCALE,
+                "EffectiveCoefficient", effectiveCoefficient,
+                "Estimate", null,
+                "EstimateFloor", null,
+                "DeltaFromOfficialPercent", null,
+                "CalibrationRatio", null
             ),
             "AttackBreakdown", orderedMap(
                 "BasicAttackPower", 0,
@@ -75,14 +85,10 @@ public class CombatPowerAnalysisService {
             return List.of();
         }
 
-        return List.of(orderedMap("Category", "criticalStats", "Percent", round(percent)));
+        return List.of(orderedMap("Category", "criticalStats", "Percent", DamageModel.roundPercent(percent)));
     }
 
     private Double parseNumber(String value) {
         return parseDouble(value == null ? null : value.replace(",", ""));
-    }
-
-    private double round(double value) {
-        return Math.round((value + 1e-12) * 100) / 100.0;
     }
 }

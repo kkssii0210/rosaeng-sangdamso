@@ -1,14 +1,23 @@
 import Image from "next/image";
-import { buildAccessoryContributionIndex, formatContributionPercent, isAccessoryType } from "../lib/ui/accessoryContributions.js";
 import { formatNumber, gradeClass, listOf, qualityClass, stripMarkup, valueOf } from "./armoryUtils.js";
 
-export default function EquipmentList({ equipment, profile, criticalStats }) {
+const ACCESSORY_TYPES = new Set(["목걸이", "귀걸이", "반지"]);
+
+function isAccessoryType(type) {
+  return ACCESSORY_TYPES.has(String(type || ""));
+}
+
+function formatContributionPercent(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${number.toFixed(2)}%` : "0.00%";
+}
+
+export default function EquipmentList({ equipment, profile, criticalStats, accessoryContributions = { lines: {}, itemTotals: {} } }) {
   if (!equipment.length) {
     return <p className="empty-state">장비 정보를 찾지 못했어.</p>;
   }
 
-  const accessoryContributions = buildAccessoryContributionIndex(equipment, profile, criticalStats);
-  const hasAccessoryContributions = Object.keys(accessoryContributions.lines).length > 0;
+  const hasAccessoryContributions = Object.keys(accessoryContributions.lines || {}).length > 0;
 
   return (
     <>
@@ -30,7 +39,7 @@ export default function EquipmentList({ equipment, profile, criticalStats }) {
           const abilityStone = valueOf(item, ["AbilityStone", "abilityStone"], null);
           const stoneEngravings = listOf(abilityStone, ["Engravings", "engravings"]);
           const stoneEffects = listOf(abilityStone, ["Effects", "effects"]);
-          const itemContribution = accessoryContributions.itemTotals[index];
+          const itemContribution = accessoryContributions.itemTotals?.[index];
           const hasAccessoryContribution = isAccessoryType(type) && Number.isFinite(itemContribution);
           const weaponStats = valueOf(item, ["WeaponStats", "weaponStats"], null);
           const weaponPower = valueOf(weaponStats, ["WeaponPower", "weaponPower"], null);
@@ -137,7 +146,7 @@ export default function EquipmentList({ equipment, profile, criticalStats }) {
                           <span className="detail-title">{title}</span>
                           <ul>
                             {lines.map((line, lineIndex) => {
-                              const contribution = accessoryContributions.lines[`${index}:${sectionIndex}:${lineIndex}`];
+                              const contribution = accessoryContributions.lines?.[`${index}:${sectionIndex}:${lineIndex}`];
                               const isZeroContribution = Number(contribution?.ContributionPercent || 0) === 0;
 
                               return (

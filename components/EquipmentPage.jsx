@@ -2,18 +2,17 @@ import AvatarSummaryPanel from "./AvatarSummaryPanel.jsx";
 import EngravingsPanel from "./EngravingsPanel.jsx";
 import EquipmentList from "./EquipmentList.jsx";
 import GemsPanel from "./GemsPanel.jsx";
-import { buildMainStatSummary } from "../lib/ui/mainStats.js";
 
-export default function EquipmentPage({ equipment, engravings, gems, profile, avatars, criticalStats }) {
+export default function EquipmentPage({ equipment, engravings, gems, profile, avatars, criticalStats, mainStats, avatarStats, accessoryContributions, engravingContributions }) {
   const equipmentSpecContext = {
-    MainStatTotal: buildMainStatSummary(equipment).MainStatTotal
+    MainStatTotal: mainStats?.MainStatTotal ?? 0
   };
 
   return (
     <div className="armory-page equipment-page-grid">
-      <EngravingsPanel engravings={engravings} criticalStats={criticalStats} />
+      <EngravingsPanel engravings={engravings} criticalStats={criticalStats} engravingContributions={engravingContributions} />
       <GemsPanel gems={gems} />
-      <AvatarSummaryPanel avatars={avatars} />
+      <AvatarSummaryPanel avatars={avatars} avatarStats={avatarStats} />
       <section className="info-panel equipment-panel" aria-labelledby="equipment-title">
         <div className="panel-heading">
           <div>
@@ -22,7 +21,7 @@ export default function EquipmentPage({ equipment, engravings, gems, profile, av
           </div>
           <span className="count-pill">{equipment.length}</span>
         </div>
-        <EquipmentList equipment={equipment} profile={profile} specContext={equipmentSpecContext} criticalStats={criticalStats} />
+        <EquipmentList equipment={equipment} profile={profile} specContext={equipmentSpecContext} criticalStats={criticalStats} accessoryContributions={accessoryContributions} />
       </section>
     </div>
   );

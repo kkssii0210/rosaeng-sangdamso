@@ -3,6 +3,8 @@ package com.rosaeng.sangdamso.efficiency;
 import static com.rosaeng.sangdamso.character.normalization.ArmoryJsonSupport.orderedMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -51,6 +53,28 @@ class AccessoryRecoveryEstimateServiceTest {
         assertThat(estimate.get("Facts").get("feeRate").asDouble()).isEqualTo(0.05);
         assertThat(estimate.get("NetCostGold").asInt()).isEqualTo(65000);
         assertThat(estimate.get("NetGoldPerOnePercentCombatPower").asInt()).isEqualTo(43333);
+    }
+
+    @Test
+    void matchesAccessoryRecoveryEstimateGoldenFixture() throws IOException {
+        JsonNode fixture = readFixture("golden/accessory-recovery-estimate.json");
+        JsonNode input = fixture.get("input");
+        JsonNode expected = fixture.get("expected");
+
+        JsonNode estimate = service.build(
+            input.get("currentAccessory"),
+            input.get("auctionCandidates"),
+            input.get("recommendation")
+        );
+
+        assertThat(estimate.get("Status").asString()).isEqualTo(expected.get("Status").asString());
+        assertThat(estimate.get("Confidence").asString()).isEqualTo(expected.get("Confidence").asString());
+        assertThat(estimate.get("EvidenceCount").asInt()).isEqualTo(expected.get("EvidenceCount").asInt());
+        assertThat(estimate.get("EstimatedGrossRecoveryGold").asInt()).isEqualTo(expected.get("EstimatedRecoveryGold").asInt());
+        assertThat(input.get("recommendation").get("BuyPrice").asInt() - estimate.get("EstimatedGrossRecoveryGold").asInt())
+            .isEqualTo(expected.get("NetCostGold").asInt());
+        assertThat(expected.get("NetCostGold").asInt() / input.get("recommendation").get("CombatPowerGainPercent").asDouble())
+            .isEqualTo(expected.get("NetGoldPerOnePercentCombatPower").asDouble());
     }
 
     @Test
@@ -575,5 +599,12 @@ class AccessoryRecoveryEstimateServiceTest {
 
     private JsonNode toJsonNode(Object value) {
         return objectMapper.convertValue(value, JsonNode.class);
+    }
+
+    private JsonNode readFixture(String fixture) throws IOException {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fixture)) {
+            assertThat(inputStream).as("fixture %s should exist", fixture).isNotNull();
+            return objectMapper.readTree(inputStream);
+        }
     }
 }

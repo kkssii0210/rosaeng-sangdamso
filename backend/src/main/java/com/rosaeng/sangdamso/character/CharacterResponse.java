@@ -13,8 +13,12 @@ public record CharacterResponse(
     JsonNode skills,
     JsonNode engravings,
     JsonNode gems,
+    JsonNode mainStats,
+    JsonNode avatarStats,
     JsonNode classIdentityEffects,
     JsonNode criticalStats,
+    JsonNode accessoryContributions,
+    JsonNode engravingContributions,
     JsonNode combatPowerAnalysis,
     JsonNode upgradeEfficiency
 ) {
