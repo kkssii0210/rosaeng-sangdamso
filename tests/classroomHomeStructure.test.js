@@ -1,12 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const rootDir = process.cwd();
 
 function readText(path) {
   return readFileSync(join(rootDir, path), "utf8");
+}
+
+function isFile(path) {
+  return statSync(join(rootDir, path), { throwIfNoEntry: false })?.isFile() === true;
 }
 
 test("classroom home component files exist", () => {
@@ -18,16 +22,17 @@ test("classroom home component files exist", () => {
   ];
 
   for (const file of files) {
-    assert.equal(existsSync(join(rootDir, file)), true, `${file} should exist`);
+    assert.equal(isFile(file), true, `${file} should exist`);
   }
 });
 
 test("home page uses the classroom shell and keeps Spring API paths", () => {
   const source = readText("app/page.jsx");
 
-  assert.match(source, /ClassroomIntro/);
-  assert.match(source, /ClassroomShell/);
-  assert.match(source, /\/api\/characters\/\$\{encodeURIComponent\(characterName\)\}/);
+  assert.match(source, /<ClassroomIntro\b/);
+  assert.match(source, /<ClassroomShell\b/);
+  assert.match(source, /\/api\/characters\//);
+  assert.match(source, /encodeURIComponent\(/);
   assert.match(source, /\/api\/consult\/sggu/);
   assert.doesNotMatch(source, /WelcomeScene/);
   assert.doesNotMatch(source, /SgguConsultantChat/);
@@ -36,8 +41,8 @@ test("home page uses the classroom shell and keeps Spring API paths", () => {
 test("classroom styles are present in global css", () => {
   const source = readText("app/globals.css");
 
-  assert.match(source, /classroom-home/);
-  assert.match(source, /classroom-theme-light/);
-  assert.match(source, /classroom-theme-dark/);
-  assert.match(source, /classroom-chalkboard/);
+  assert.match(source, /\.classroom-home\b/);
+  assert.match(source, /\.classroom-theme-light\b/);
+  assert.match(source, /\.classroom-theme-dark\b/);
+  assert.match(source, /\.classroom-chalkboard\b/);
 });
