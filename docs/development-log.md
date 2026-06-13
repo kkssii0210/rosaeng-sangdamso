@@ -474,6 +474,15 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - `docs/sggu-character-guide.md`, `docs/sggu-prompt-rules.md`, `docs/sggu-blink-preview.html`, sketch/workflow 자료를 추가해 슥구 캐릭터 정체성과 이미지 생성/눈깜빡임 실험 기준을 문서화했다.
 - 앱에서 쓰는 생각중 슥구 이미지는 Git에 올라갈 수 있도록 `public/sggu-thinking-closed-eyes.png`로 배치하고, 생성 후보가 쌓이는 `.codex/`, `.hermes/`, `public/generated/`는 로컬 작업 산출물로 유지한다.
 
+### 라벤더 강의실 홈 1차 설계/구현
+
+- `sketches/003-sggu-analytics-classroom` 시안을 기준으로 홈을 라벤더 강의실 셸로 전환했다.
+- 1초 라벤더 허브 오두막 인트로를 추가하고, reduced motion 환경에서는 짧게 건너뛰도록 했다.
+- 기본 light 테마와 dark 테마 토글을 추가하고 선택값을 `localStorage`에 저장하도록 했다.
+- 오늘의 칠판 상태를 조회 전, 로딩 중, 분석 완료, 오류로 나누고 추천 후보 유형별 판서 문구를 분리했다.
+- 기존 캐릭터 조회와 슥구 상담 API 흐름은 유지하면서 화면 구조만 `ClassroomIntro`, `ClassroomShell`, `TodayChalkboard` 중심으로 교체했다.
+- 다크 모드 accent 대비, 모바일 입력 높이, disabled 버튼 상태를 보강했다.
+
 ### 검증
 
 - `npm test`
@@ -481,12 +490,17 @@ The LLM consultant receives a compact character/spec-up summary from the app and
 - `npm run build`
 - `cd backend && ./mvnw test`
 - `git diff --check`
+- `npm run smoke:sggu`
+- `curl http://127.0.0.1:3000/`: 200 확인
+- `curl http://127.0.0.1:8080/actuator/health`: `UP` 확인
+- `curl http://172.27.64.1:11434/api/tags`: `qwen2.5:7b` 확인
 
 ### 다음 작업
 
 - Spring 응답 계약이 넓어진 만큼 실제 Lostark API 캐릭터 조회 smoke test로 `mainStats`, `avatarStats`, 악세/각인 기여도 필드가 UI에서 정상 표시되는지 확인한다.
 - `lib/spec/*`는 reference/parity-test 용도만 남기고, runtime bundle에 들어가지 않는 구조를 계속 좁힌다.
 - 슥구 blink preview는 아직 앱에 연결하지 않은 실험 자료이므로, 적용 전에는 기존 컷아웃 정체성과 모바일 표시 상태를 다시 검수한다.
+- 장비/스펙업 추천 세부 탭은 이번 홈 1차 범위 밖으로 남겼으므로, 다음 UI 대공사 단위에서 강의실 내 하위 강의로 확장한다.
 
 ## 앞으로의 기록 방식
 
