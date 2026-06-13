@@ -5,7 +5,7 @@ export default function ClassroomThemeToggle({ theme, onToggle }) {
     <button
       type="button"
       className="classroom-theme-toggle"
-      aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
+      aria-label="다크 모드"
       aria-pressed={isDark}
       onClick={onToggle}
     >

@@ -18,15 +18,15 @@ function lessonItems() {
 export default function ClassroomShell({
   theme,
   onToggleTheme,
-  messages,
-  input,
-  onInputChange,
+  messages = [],
+  input = "",
+  onInputChange = () => {},
   onSubmit,
-  isLoading,
-  isConsulting,
+  isLoading = false,
+  isConsulting = false,
   armory,
   specUpRecommendation,
-  lookupErrorCode,
+  lookupErrorCode = "",
   inputRef
 }) {
   const hasArmory = Boolean(armory);
@@ -53,11 +53,7 @@ export default function ClassroomShell({
         : "강의 시작";
 
   function focusInput() {
-    inputRef.current?.focus();
-  }
-
-  function handlePreparedLessonClick(event) {
-    event.currentTarget.blur();
+    inputRef?.current?.focus();
   }
 
   return (
@@ -90,8 +86,8 @@ export default function ClassroomShell({
                 type="button"
                 key={label}
                 className={active ? "active" : ""}
-                aria-disabled={!active}
-                onClick={active ? focusInput : handlePreparedLessonClick}
+                disabled={!active}
+                onClick={active ? focusInput : undefined}
               >
                 <span>{label}</span>
                 <em>{meta}</em>

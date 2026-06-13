@@ -14,7 +14,7 @@ export default function ClassroomIntro({ onComplete }) {
     }
 
     completedRef.current = true;
-    onComplete();
+    onComplete?.();
   }, [onComplete]);
 
   useEffect(() => {
