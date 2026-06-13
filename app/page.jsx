@@ -80,7 +80,7 @@ export default function Home() {
       const message = caughtError instanceof Error ? caughtError.message : "캐릭터 정보를 불러오지 못했어.";
       setArmory(null);
       setSpecUpRecommendation(null);
-      setLookupErrorCode(caughtError instanceof Error ? caughtError.code || "" : "");
+      setLookupErrorCode(caughtError instanceof Error ? caughtError.code || "UNKNOWN" : "UNKNOWN");
       setMessages([{ role: "error", text: message }]);
     } finally {
       setIsLoading(false);

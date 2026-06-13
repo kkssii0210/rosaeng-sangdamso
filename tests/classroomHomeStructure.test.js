@@ -38,6 +38,13 @@ test("home page uses the classroom shell and keeps Spring API paths", () => {
   assert.doesNotMatch(source, /SgguConsultantChat/);
 });
 
+test("home page keeps unknown lookup failures on the error chalkboard", () => {
+  const source = readText("app/page.jsx");
+
+  assert.match(source, /caughtError\.code \|\| "UNKNOWN"/);
+  assert.match(source, /: "UNKNOWN"\)/);
+});
+
 test("classroom styles are present in global css", () => {
   const source = readText("app/globals.css");
 
@@ -45,4 +52,12 @@ test("classroom styles are present in global css", () => {
   assert.match(source, /\.classroom-theme-light\b/);
   assert.match(source, /\.classroom-theme-dark\b/);
   assert.match(source, /\.classroom-chalkboard\b/);
+});
+
+test("classroom intro controls stack on narrow screens", () => {
+  const source = readText("app/globals.css");
+
+  assert.match(source, /@media \(max-width: 520px\)/);
+  assert.match(source, /\.classroom-intro-title\s*\{[^}]*bottom: 72px/s);
+  assert.match(source, /\.classroom-intro-skip\s*\{[^}]*left: 24px/s);
 });
