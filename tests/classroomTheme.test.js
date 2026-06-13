@@ -19,7 +19,7 @@ function createStorage(initialValue) {
   return {
     getItem: (key) => (values.has(key) ? values.get(key) : null),
     setItem: (key, value) => values.set(key, value),
-    valueOf: (key = CLASSROOM_THEME_STORAGE_KEY) => values.get(key)
+    storedValue: (key = CLASSROOM_THEME_STORAGE_KEY) => values.get(key)
   };
 }
 
@@ -36,13 +36,34 @@ test("reads the stored classroom theme with light fallback", () => {
   assert.equal(readStoredClassroomTheme(null), "light");
 });
 
+test("falls back to light when classroom theme storage read throws", () => {
+  const storage = {
+    getItem() {
+      throw new Error("storage blocked");
+    }
+  };
+
+  assert.equal(readStoredClassroomTheme(storage), "light");
+});
+
 test("writes only normalized classroom theme values", () => {
   const storage = createStorage();
 
   assert.equal(writeStoredClassroomTheme(storage, "dark"), "dark");
-  assert.equal(storage.valueOf(), "dark");
+  assert.equal(storage.storedValue(), "dark");
   assert.equal(writeStoredClassroomTheme(storage, "unknown"), "light");
-  assert.equal(storage.valueOf(), "light");
+  assert.equal(storage.storedValue(), "light");
+});
+
+test("returns the normalized classroom theme when storage write throws", () => {
+  const storage = {
+    setItem() {
+      throw new Error("storage blocked");
+    }
+  };
+
+  assert.equal(writeStoredClassroomTheme(storage, "dark"), "dark");
+  assert.equal(writeStoredClassroomTheme(storage, "unknown"), "light");
 });
 
 test("resolves next classroom theme and class name", () => {
