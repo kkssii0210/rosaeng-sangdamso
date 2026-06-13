@@ -3889,6 +3889,7 @@ button:disabled {
   --classroom-board-deep: oklch(22% 0.066 296deg);
   --classroom-chalk: oklch(96% 0.018 304deg);
   --classroom-accent: oklch(48% 0.145 295deg);
+  --classroom-on-accent: oklch(98% 0.01 304deg);
   --classroom-accent-soft: oklch(86% 0.055 300deg);
   --classroom-wood: oklch(54% 0.082 65deg);
   --classroom-error: oklch(55% 0.17 28deg);
@@ -3917,6 +3918,7 @@ button:disabled {
   --classroom-board-deep: oklch(15% 0.044 296deg);
   --classroom-chalk: oklch(94% 0.019 304deg);
   --classroom-accent: oklch(78% 0.083 300deg);
+  --classroom-on-accent: oklch(18% 0.035 292deg);
   --classroom-accent-soft: oklch(34% 0.062 296deg);
   --classroom-wood: oklch(48% 0.075 65deg);
   --classroom-error: oklch(70% 0.14 28deg);
@@ -4013,7 +4015,7 @@ button:disabled {
 }
 
 .classroom-theme-toggle span.active {
-  color: var(--classroom-chalk);
+  color: var(--classroom-on-accent);
   background: var(--classroom-accent);
 }
 
@@ -4207,8 +4209,14 @@ button:disabled {
 .classroom-board-primary,
 .classroom-query button {
   border: 1px solid var(--classroom-accent);
-  color: var(--classroom-chalk);
+  color: var(--classroom-on-accent);
   background: var(--classroom-accent);
+}
+
+.classroom-board-primary:disabled,
+.classroom-query button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
 }
 
 .classroom-board-secondary {
@@ -4225,10 +4233,11 @@ button:disabled {
 }
 
 .classroom-query input {
+  min-height: 44px;
   min-width: 0;
   border: 1px solid var(--classroom-line);
   border-radius: 11px;
-  padding: 0 13px;
+  padding: 10px 13px;
   color: var(--classroom-ink);
   background: var(--classroom-surface);
   font-weight: 800;
@@ -4328,6 +4337,17 @@ button:disabled {
   border-radius: 18px 18px 10px 10px;
   background: linear-gradient(180deg, oklch(49% 0.055 65deg), oklch(32% 0.044 65deg));
   box-shadow: 0 24px 48px oklch(26% 0.067 292deg / 0.24);
+}
+
+.classroom-intro-sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 20%, oklch(99% 0.012 304deg / 0.78) 0 2px, transparent 3px),
+    radial-gradient(circle at 74% 18%, oklch(99% 0.012 304deg / 0.58) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 38%, oklch(99% 0.012 304deg / 0.62) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 52% 78%, oklch(100% 0.01 304deg / 0.26), transparent 42%);
+  pointer-events: none;
 }
 
 .classroom-intro-cabin::before {
